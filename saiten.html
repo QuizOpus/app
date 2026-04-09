@@ -189,7 +189,7 @@
           📍 トンボ設定（4点）
         </button>
         <button class="mode-btn" id="mode-mark" onclick="setMode('mark')">
-          🔢 受付番号マーク設定
+          🔢 受付番号マーク設定（1回ドラッグ）
         </button>
         <button class="mode-btn" id="mode-answer" onclick="setMode('answer')">
           ✏️ 解答欄設定（100問）
@@ -203,6 +203,11 @@
       <div class="sidebar-section">
         <h3>トンボ</h3>
         <div class="status" id="tombo-status">未設定</div>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>受付番号マーク</h3>
+        <div class="status" id="mark-status">未設定</div>
       </div>
 
       <div class="sidebar-section">
@@ -244,7 +249,8 @@
     let scale = 1.5;
     let mode = 'tombo';
     let tomboPoints = [];
-    let markRegions = [];
+    let markRegion = null;   // 1つの矩形→3×10に自動分割
+    let markCells = [];      // 分割後の30マス
     let answerRegions = [];
     let dragStart = null;
     let dragCurrent = null;
@@ -293,6 +299,25 @@
       drawOverlay();
     }
 
+    function buildMarkCells(r) {
+      const cells = [];
+      const cellW = r.w / 10;
+      const cellH = r.h / 3;
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 10; col++) {
+          cells.push({
+            x: r.x + col * cellW,
+            y: r.y + row * cellH,
+            w: cellW,
+            h: cellH,
+            row,  // 0=100の位, 1=10の位, 2=1の位
+            col   // 0〜9
+          });
+        }
+      }
+      return cells;
+    }
+
     function drawOverlay() {
       octx.clearRect(0, 0, overlay.width, overlay.height);
 
@@ -307,14 +332,32 @@
         octx.fillText(i + 1, p.x - 3, p.y + 4);
       });
 
-      // マーク領域
-      markRegions.forEach(r => {
-        octx.strokeStyle = '#2196f3';
-        octx.lineWidth = 2;
-        octx.strokeRect(r.x, r.y, r.w, r.h);
-        octx.fillStyle = 'rgba(33,150,243,0.2)';
-        octx.fillRect(r.x, r.y, r.w, r.h);
-      });
+      // マーク領域（3×10分割表示）
+      if (markCells.length > 0) {
+        const rowLabels = ['100', '10', '1'];
+        markCells.forEach(c => {
+          octx.strokeStyle = '#2196f3';
+          octx.lineWidth = 1;
+          octx.strokeRect(c.x, c.y, c.w, c.h);
+          octx.fillStyle = 'rgba(33,150,243,0.15)';
+          octx.fillRect(c.x, c.y, c.w, c.h);
+        });
+        // 行ラベル
+        const rowLabelsArr = ['100の位', '10の位', '1の位'];
+        for (let row = 0; row < 3; row++) {
+          const firstCell = markCells[row * 10];
+          octx.fillStyle = '#2196f3';
+          octx.font = '10px sans-serif';
+          octx.fillText(rowLabelsArr[row], firstCell.x, firstCell.y - 2);
+        }
+        // 列ラベル（0〜9）
+        for (let col = 0; col < 10; col++) {
+          const firstCell = markCells[col];
+          octx.fillStyle = '#aaa';
+          octx.font = '9px sans-serif';
+          octx.fillText(col, firstCell.x + firstCell.w / 2 - 3, firstCell.y + firstCell.h - 2);
+        }
+      }
 
       // 解答欄
       answerRegions.forEach((r, i) => {
@@ -390,7 +433,10 @@
         const h = Math.abs(pos.y - dragStart.y);
         if (w > 5 && h > 5) {
           if (mode === 'mark') {
-            markRegions.push({ x, y, w, h });
+            markRegion = { x, y, w, h };
+            markCells = buildMarkCells(markRegion);
+            document.getElementById('mark-status').innerHTML =
+              `<span>設定済み</span>（3行×10列に自動分割）`;
           } else if (mode === 'answer') {
             if (answerRegions.length < 100) {
               answerRegions.push({ x, y, w, h });
@@ -420,7 +466,7 @@
       });
       const msgs = {
         tombo: 'トンボを4点クリックしてください（左上→右上→左下→右下）',
-        mark: '受付番号マーク欄をドラッグで囲んでください（行ごとに3回）',
+        mark: '受付番号マーク欄全体を1回ドラッグで囲んでください（3行×10列に自動分割）',
         answer: '解答欄を1問ずつドラッグで囲んでください（1番から順に）',
         grid: '1番の左上角をクリック→100番の右下角をクリックしてください'
       };
@@ -447,7 +493,7 @@
       }
       updateAnswerCount();
       drawOverlay();
-      alert('100問の解答欄を自動設定しました。ずれがある場合は手動で調整してください。');
+      alert('100問の解答欄を自動設定しました。');
     }
 
     function updateTomboStatus() {
@@ -471,13 +517,18 @@
         alert('トンボを4点設定してください');
         return;
       }
+      if (!markRegion) {
+        alert('受付番号マーク欄を設定してください');
+        return;
+      }
       if (answerRegions.length !== 100) {
         alert(`解答欄が${answerRegions.length}問しか設定されていません`);
         return;
       }
       const config = {
         tombo: tomboPoints,
-        markRegions,
+        markRegion,
+        markCells,
         answerRegions,
         scale,
         savedAt: Date.now()
@@ -489,11 +540,13 @@
     function resetConfig() {
       if (!confirm('設定をリセットしますか？')) return;
       tomboPoints = [];
-      markRegions = [];
+      markRegion = null;
+      markCells = [];
       answerRegions = [];
       gridPoints = [];
       updateTomboStatus();
       updateAnswerCount();
+      document.getElementById('mark-status').textContent = '未設定';
       drawOverlay();
     }
 

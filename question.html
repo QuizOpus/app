@@ -247,15 +247,19 @@
             const done = entryNumbers.filter(n => myScores[n] !== null).length;
             document.getElementById('progress-text').textContent = `${done} / ${total} 件`;
 
+            let masterData = {};
+            try { masterData = JSON.parse(sessionStorage.getItem('masterData') || '{}'); } catch(e) {}
+
             entryNumbers.forEach((entryNum, idx) => {
                 const imageData = answers[entryNum]?.cells[`q${currentQ}`];
                 const myScore = myScores[entryNum];
+                const displayName = masterData[entryNum]?.name || `受付番号 ${entryNum}`;
 
                 const card = document.createElement('div');
                 card.className = `answer-card ${myScore === 'correct' ? 'correct' : myScore === 'wrong' ? 'wrong' : ''} ${idx === selectedIndex ? 'selected' : ''}`;
                 card.innerHTML = `
-          <img src="${imageData || ''}" alt="${entryNum}番" />
-          <div class="entry-num">受付番号 ${entryNum}</div>
+          <img src="${imageData || ''}" alt="${displayName}" />
+          <div class="entry-num">${displayName}</div>
         `;
                 card.addEventListener('click', () => selectCard(idx));
                 grid.appendChild(card);

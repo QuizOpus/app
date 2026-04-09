@@ -281,9 +281,14 @@
             }
 
             grid.innerHTML = '';
+
+            let masterData = {};
+            try { masterData = JSON.parse(sessionStorage.getItem('masterData') || '{}'); } catch(e) {}
+
             conflicts.forEach(({ q, entryNum, qScores, finalResult }, idx) => {
                 const imageData = answersData[entryNum]?.cells[`q${q}`];
                 const modelAnswer = answersText[q] || '';
+                const displayName = masterData[entryNum]?.name || `受付番号 ${entryNum}`;
 
                 const card = document.createElement('div');
                 card.className = `conflict-card ${finalResult ? 'resolved' : ''} ${idx === selectedIndex ? 'selected' : ''}`;
@@ -300,9 +305,9 @@
                 card.innerHTML = `
           <div class="card-header">
             <div class="q-tag">${q}問</div>
-            <div class="entry-tag">受付番号 ${entryNum}</div>
+            <div class="entry-tag">${displayName}</div>
           </div>
-          <img class="answer-img" src="${imageData || ''}" alt="${entryNum}番 ${q}問" />
+          <img class="answer-img" src="${imageData || ''}" alt="${displayName} ${q}問" />
           ${modelAnswer ? `<div class="model-answer">${modelAnswer}</div>` : ''}
           <div class="scorer-votes">${votesHtml}</div>
           ${finalResult ? `<div class="final-result ${finalResult}">判定: ${finalResult === 'correct' ? '○' : '×'}</div>` : ''}

@@ -239,6 +239,21 @@
 
         if (!scorerName) location.href = 'index.html';
 
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxUODC2F-hbGRvkOZ2EN-XRpatzJOgEwQiZxNvEZ_TFppXrgKN8rd7RcHHdEq9ZX2KW3A/exec';
+
+        async function fetchMasterData() {
+            if (!sessionStorage.getItem('masterData')) {
+                try {
+                    const res = await fetch(GAS_URL + '?master=1');
+                    const data = await res.json();
+                    sessionStorage.setItem('masterData', JSON.stringify(data));
+                } catch (e) {
+                    console.warn('マスターデータ取得失敗:', e);
+                }
+            }
+        }
+        fetchMasterData();
+
         document.getElementById('scorer-badge').textContent =
             `${scorerName}（${scorerRole === 'admin' ? '管理者' : '採点者'}）`;
 

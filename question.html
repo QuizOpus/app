@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIQ the 13th 採点システム - 採点</title>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: sans-serif;
+            background: #1a1a2e;
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        h1 {
+            font-size: 20px;
+        }
+
+        .q-badge {
+            background: #0f3460;
+            padding: 6px 16px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            background: #4caf50;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #388e3c;
+        }
+
+        .btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+
+        .btn.secondary {
+            background: #0f3460;
+            border: 1px solid #444;
+        }
+
+        .btn.secondary:hover {
+            background: #1a4a7a;
+        }
+
+        .btn.complete {
+            background: #1565c0;
+            margin-left: auto;
+            font-size: 16px;
+            padding: 10px 24px;
+        }
+
+        .btn.complete:hover {
+            background: #0d47a1;
+        }
+
+        .btn.complete:disabled {
+            background: #444;
+        }
+
+        .progress-text {
+            font-size: 13px;
+            color: #aaa;
+        }
+
+        .answer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .answer-card {
+            background: #16213e;
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            border: 2px solid #444;
+            transition: border-color 0.2s;
+        }
+
+        .answer-card.correct {
+            border-color: #4caf50;
+            background: #1b3a1f;
+        }
+
+        .answer-card.wrong {
+            border-color: #ef5350;
+            background: #3a1b1b;
+        }
+
+        .answer-card img {
+            width: 100%;
+            height: 70px;
+            object-fit: contain;
+            border-radius: 4px;
+            background: white;
+            margin-bottom: 8px;
+        }
+
+        .entry-num {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 8px;
+        }
+
+        .mark-btns {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+        }
+
+        .mark-btn {
+            flex: 1;
+            padding: 8px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.15s;
+        }
+
+        .mark-btn.correct-btn {
+            background: #333;
+            color: #4caf50;
+        }
+
+        .mark-btn.correct-btn:hover {
+            background: #1b5e20;
+        }
+
+        .mark-btn.wrong-btn {
+            background: #333;
+            color: #ef5350;
+        }
+
+        .mark-btn.wrong-btn:hover {
+            background: #b71c1c;
+        }
+
+        .mark-btn.selected-correct {
+            background: #4caf50;
+            color: white;
+        }
+
+        .mark-btn.selected-wrong {
+            background: #ef5350;
+            color: white;
+        }
+
+        .complete-section {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .complete-info {
+            font-size: 13px;
+            color: #aaa;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #aaa;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="top-bar">
+        <button class="btn secondary" onclick="location.href='judge.html'">← 一覧へ</button>
+        <h1>採点</h1>
+        <div class="q-badge" id="q-badge">- 問</div>
+        <div class="progress-text" id="progress-text"></div>
+    </div>
+
+    <div class="answer-grid" id="answer-grid">
+        <div class="loading">読み込み中...</div>
+    </div>
+
+    <div class="complete-section">
+        <div class="complete-info" id="complete-info">全問に○×を入力すると採点完了ボタンが押せます</div>
+        <button class="btn complete" id="complete-btn" disabled onclick="completeScoring()">
+            採点完了
+        </button>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDk-RpKCX5Hd-xNnrso_x5fd3S-vUoWKUc",
+            authDomain: "ciq-saiten.firebaseapp.com",
+            databaseURL: "https://ciq-saiten-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "ciq-saiten",
+            storageBucket: "ciq-saiten.firebasestorage.app",
+            messagingSenderId: "987606904586",
+            appId: "1:987606904586:web:b16876b8963a55a60d94f3"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const scorerName = sessionStorage.getItem('scorer_name');
+        const scorerRole = sessionStorage.getItem('scorer_role');
+        const currentQ = parseInt(sessionStorage.getItem('current_q') || '1');
+
+        if (!scorerName) location.href = 'index.html';
+
+        document.getElementById('q-badge').textContent = `${currentQ} 問`;
+
+        let answers = {};
+        let myScores = {};
+        let entryNumbers = [];
+        let isCompleted = false;
+
+        async function init() {
+            // 採点者として登録（この問題を開いた時点で名前を記録）
+            // 答案データ読み込み
+            const answersSnap = await db.ref('answers').get();
+            if (!answersSnap.exists()) {
+                document.getElementById('answer-grid').innerHTML =
+                    '<div class="loading">答案データがありません</div>';
+                return;
+            }
+            answers = answersSnap.val();
+            entryNumbers = Object.keys(answers).map(Number).sort((a, b) => a - b);
+
+            // 自分のスコアをリアルタイム監視
+            db.ref('scores').on('value', snap => {
+                const allScores = snap.val() || {};
+                myScores = {};
+                entryNumbers.forEach(entryNum => {
+                    myScores[entryNum] = allScores[entryNum]?.[`q${currentQ}`]?.[scorerName] || null;
+                });
+
+                // 完了フラグ確認
+                isCompleted = allScores[`__completed__q${currentQ}`]?.[scorerName] === true;
+
+                renderGrid();
+                updateCompleteBtn();
+            });
+
+            // 採点者として登録
+            await registerScorer();
+        }
+
+        async function registerScorer() {
+            // ダミーの採点データを書き込んで採点者として登録
+            // 既に登録されてるか確認
+            const snap = await db.ref(`scores/__scorers__q${currentQ}/${scorerName}`).get();
+            if (!snap.exists()) {
+                await db.ref(`scores/__scorers__q${currentQ}/${scorerName}`).set(true);
+            }
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('answer-grid');
+            grid.innerHTML = '';
+
+            const total = entryNumbers.length;
+            const done = entryNumbers.filter(n => myScores[n] !== null).length;
+            document.getElementById('progress-text').textContent = `${done} / ${total} 件採点済み`;
+
+            entryNumbers.forEach(entryNum => {
+                const imageData = answers[entryNum]?.cells[`q${currentQ}`];
+                const myScore = myScores[entryNum];
+
+                const card = document.createElement('div');
+                card.className = `answer-card ${myScore === 'correct' ? 'correct' : myScore === 'wrong' ? 'wrong' : ''}`;
+                card.id = `card-${entryNum}`;
+                card.innerHTML = `
+          <img src="${imageData || ''}" alt="${entryNum}番" />
+          <div class="entry-num">受付番号 ${entryNum}</div>
+          <div class="mark-btns">
+            <button class="mark-btn correct-btn ${myScore === 'correct' ? 'selected-correct' : ''}"
+              onclick="mark(${entryNum}, 'correct')" ${isCompleted ? 'disabled' : ''}>○</button>
+            <button class="mark-btn wrong-btn ${myScore === 'wrong' ? 'selected-wrong' : ''}"
+              onclick="mark(${entryNum}, 'wrong')" ${isCompleted ? 'disabled' : ''}>×</button>
+          </div>
+        `;
+                grid.appendChild(card);
+            });
+        }
+
+        function mark(entryNum, result) {
+            if (isCompleted) return;
+            db.ref(`scores/${entryNum}/q${currentQ}/${scorerName}`).set(result);
+        }
+
+        function updateCompleteBtn() {
+            const total = entryNumbers.length;
+            const done = entryNumbers.filter(n => myScores[n] !== null).length;
+            const allDone = done === total;
+            const btn = document.getElementById('complete-btn');
+            const info = document.getElementById('complete-info');
+
+            if (isCompleted) {
+                btn.disabled = true;
+                btn.textContent = '採点完了済み';
+                info.textContent = '採点完了しています。修正する場合は○×ボタンを押してください。';
+                // 完了後は修正可能にするためボタンを再有効化
+                document.querySelectorAll('.mark-btn').forEach(b => b.disabled = false);
+            } else if (allDone) {
+                btn.disabled = false;
+                info.textContent = '全員分の採点が完了しました。採点完了ボタンを押してください。';
+            } else {
+                btn.disabled = true;
+                info.textContent = `全問に○×を入力すると採点完了ボタンが押せます（${done}/${total}件）`;
+            }
+        }
+
+        async function completeScoring() {
+            if (!confirm('採点を完了しますか？完了後も修正は可能です。')) return;
+            await db.ref(`scores/__completed__q${currentQ}/${scorerName}`).set(true);
+            alert('採点完了しました。問題一覧に戻ります。');
+            location.href = 'judge.html';
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

@@ -19,27 +19,25 @@
             background: #1a1a2e;
             color: white;
             min-height: 100vh;
-            padding: 20px;
+            padding-top: 100px;
+            padding-left: 20px;
+            padding-right: 20px;
+            padding-bottom: 20px;
         }
 
-        .top-bar {
+        .fixed-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #0f3460;
+            border-bottom: 2px solid #2196f3;
+            padding: 12px 20px;
+            z-index: 100;
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 20px;
+            gap: 16px;
             flex-wrap: wrap;
-        }
-
-        h1 {
-            font-size: 20px;
-        }
-
-        .q-badge {
-            background: #0f3460;
-            padding: 6px 16px;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: bold;
         }
 
         .btn {
@@ -50,6 +48,7 @@
             color: white;
             font-size: 14px;
             cursor: pointer;
+            white-space: nowrap;
         }
 
         .btn:hover {
@@ -62,27 +61,44 @@
         }
 
         .btn.secondary {
-            background: #0f3460;
-            border: 1px solid #444;
+            background: #1a4a7a;
+            border: 1px solid #2196f3;
         }
 
         .btn.secondary:hover {
-            background: #1a4a7a;
+            background: #1565c0;
         }
 
         .btn.complete {
             background: #1565c0;
-            margin-left: auto;
-            font-size: 16px;
+            font-size: 15px;
             padding: 10px 24px;
+            margin-left: auto;
         }
 
         .btn.complete:hover {
             background: #0d47a1;
         }
 
-        .btn.complete:disabled {
-            background: #444;
+        .q-badge {
+            background: #1a237e;
+            padding: 6px 16px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .answer-badge {
+            background: #1b5e20;
+            padding: 6px 16px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #a5d6a7;
+            max-width: 400px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .progress-text {
@@ -184,11 +200,13 @@
             display: flex;
             align-items: center;
             gap: 16px;
+            flex-wrap: wrap;
         }
 
         .complete-info {
             font-size: 13px;
             color: #aaa;
+            flex: 1;
         }
 
         .loading {
@@ -200,11 +218,14 @@
 </head>
 
 <body>
-    <div class="top-bar">
+    <div class="fixed-header">
         <button class="btn secondary" onclick="location.href='judge.html'">← 一覧へ</button>
-        <h1>採点</h1>
         <div class="q-badge" id="q-badge">- 問</div>
+        <div class="answer-badge" id="answer-badge">模範解答読み込み中...</div>
         <div class="progress-text" id="progress-text"></div>
+        <button class="btn complete" id="complete-btn" disabled onclick="completeScoring()">
+            採点完了
+        </button>
     </div>
 
     <div class="answer-grid" id="answer-grid">
@@ -213,9 +234,6 @@
 
     <div class="complete-section">
         <div class="complete-info" id="complete-info">全問に○×を入力すると採点完了ボタンが押せます</div>
-        <button class="btn complete" id="complete-btn" disabled onclick="completeScoring()">
-            採点完了
-        </button>
     </div>
 
     <script>
@@ -246,7 +264,11 @@
         let isCompleted = false;
 
         async function init() {
-            // 採点者として登録（この問題を開いた時点で名前を記録）
+            // 模範解答読み込み
+            const answerSnap = await db.ref(`answers_text/${currentQ}`).get();
+            const answerText = answerSnap.exists() ? answerSnap.val() : '未設定';
+            document.getElementById('answer-badge').textContent = `模範解答：${answerText}`;
+
             // 答案データ読み込み
             const answersSnap = await db.ref('answers').get();
             if (!answersSnap.exists()) {
@@ -257,32 +279,20 @@
             answers = answersSnap.val();
             entryNumbers = Object.keys(answers).map(Number).sort((a, b) => a - b);
 
-            // 自分のスコアをリアルタイム監視
+            // 採点者として登録
+            await db.ref(`scores/__scorers__q${currentQ}/${scorerName}`).set(true);
+
+            // スコアのリアルタイム監視
             db.ref('scores').on('value', snap => {
                 const allScores = snap.val() || {};
                 myScores = {};
                 entryNumbers.forEach(entryNum => {
                     myScores[entryNum] = allScores[entryNum]?.[`q${currentQ}`]?.[scorerName] || null;
                 });
-
-                // 完了フラグ確認
                 isCompleted = allScores[`__completed__q${currentQ}`]?.[scorerName] === true;
-
                 renderGrid();
                 updateCompleteBtn();
             });
-
-            // 採点者として登録
-            await registerScorer();
-        }
-
-        async function registerScorer() {
-            // ダミーの採点データを書き込んで採点者として登録
-            // 既に登録されてるか確認
-            const snap = await db.ref(`scores/__scorers__q${currentQ}/${scorerName}`).get();
-            if (!snap.exists()) {
-                await db.ref(`scores/__scorers__q${currentQ}/${scorerName}`).set(true);
-            }
         }
 
         function renderGrid() {
@@ -291,7 +301,7 @@
 
             const total = entryNumbers.length;
             const done = entryNumbers.filter(n => myScores[n] !== null).length;
-            document.getElementById('progress-text').textContent = `${done} / ${total} 件採点済み`;
+            document.getElementById('progress-text').textContent = `${done} / ${total} 件`;
 
             entryNumbers.forEach(entryNum => {
                 const imageData = answers[entryNum]?.cells[`q${currentQ}`];
@@ -299,15 +309,14 @@
 
                 const card = document.createElement('div');
                 card.className = `answer-card ${myScore === 'correct' ? 'correct' : myScore === 'wrong' ? 'wrong' : ''}`;
-                card.id = `card-${entryNum}`;
                 card.innerHTML = `
           <img src="${imageData || ''}" alt="${entryNum}番" />
           <div class="entry-num">受付番号 ${entryNum}</div>
           <div class="mark-btns">
             <button class="mark-btn correct-btn ${myScore === 'correct' ? 'selected-correct' : ''}"
-              onclick="mark(${entryNum}, 'correct')" ${isCompleted ? 'disabled' : ''}>○</button>
+              onclick="mark(${entryNum}, 'correct')">○</button>
             <button class="mark-btn wrong-btn ${myScore === 'wrong' ? 'selected-wrong' : ''}"
-              onclick="mark(${entryNum}, 'wrong')" ${isCompleted ? 'disabled' : ''}>×</button>
+              onclick="mark(${entryNum}, 'wrong')">×</button>
           </div>
         `;
                 grid.appendChild(card);
@@ -315,37 +324,75 @@
         }
 
         function mark(entryNum, result) {
-            if (isCompleted) return;
             db.ref(`scores/${entryNum}/q${currentQ}/${scorerName}`).set(result);
         }
 
         function updateCompleteBtn() {
             const total = entryNumbers.length;
             const done = entryNumbers.filter(n => myScores[n] !== null).length;
-            const allDone = done === total;
+            const allDone = done === total && total > 0;
             const btn = document.getElementById('complete-btn');
             const info = document.getElementById('complete-info');
 
             if (isCompleted) {
-                btn.disabled = true;
                 btn.textContent = '採点完了済み';
-                info.textContent = '採点完了しています。修正する場合は○×ボタンを押してください。';
-                // 完了後は修正可能にするためボタンを再有効化
-                document.querySelectorAll('.mark-btn').forEach(b => b.disabled = false);
+                btn.disabled = false;
+                btn.style.background = '#388e3c';
+                info.textContent = '採点完了済みです。修正する場合は○×ボタンを押してください。';
             } else if (allDone) {
                 btn.disabled = false;
+                btn.textContent = '採点完了';
                 info.textContent = '全員分の採点が完了しました。採点完了ボタンを押してください。';
             } else {
                 btn.disabled = true;
+                btn.textContent = '採点完了';
                 info.textContent = `全問に○×を入力すると採点完了ボタンが押せます（${done}/${total}件）`;
             }
         }
 
         async function completeScoring() {
-            if (!confirm('採点を完了しますか？完了後も修正は可能です。')) return;
-            await db.ref(`scores/__completed__q${currentQ}/${scorerName}`).set(true);
-            alert('採点完了しました。問題一覧に戻ります。');
-            location.href = 'judge.html';
+            if (isCompleted) {
+                // 完了取り消し
+                if (!confirm('採点完了を取り消して修正しますか？')) return;
+                await db.ref(`scores/__completed__q${currentQ}/${scorerName}`).remove();
+            } else {
+                if (!confirm('採点を完了しますか？')) return;
+                await db.ref(`scores/__completed__q${currentQ}/${scorerName}`).set(true);
+
+                // 3人完了したら自動確定チェック
+                const snap = await db.ref('scores').get();
+                const allScores = snap.val() || {};
+                checkAutoConfirm(allScores, currentQ);
+
+                alert('採点完了しました。問題一覧に戻ります。');
+                location.href = 'judge.html';
+            }
+        }
+
+        async function checkAutoConfirm(allScores, q) {
+            const completedScorers = Object.keys(allScores[`__completed__q${q}`] || {});
+            if (completedScorers.length < 3) return;
+
+            const entryNums = Object.keys(allScores).filter(k => !k.startsWith('__')).map(Number);
+            const finals = {};
+            let allAgree = true;
+
+            for (const entryNum of entryNums) {
+                const qScores = allScores[entryNum]?.[`q${q}`] || {};
+                const vals = Object.values(qScores);
+                const corrects = vals.filter(v => v === 'correct').length;
+                const wrongs = vals.filter(v => v === 'wrong').length;
+
+                if (corrects > 0 && wrongs > 0) {
+                    allAgree = false;
+                    break;
+                }
+                finals[entryNum] = corrects >= wrongs ? 'correct' : 'wrong';
+            }
+
+            if (allAgree) {
+                await db.ref(`scores/__final__q${q}`).set(finals);
+            }
         }
 
         init();

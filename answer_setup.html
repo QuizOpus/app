@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIQ the 13th 採点システム - 模範解答設定</title>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: sans-serif;
+            background: #1a1a2e;
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 20px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            background: #4caf50;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #388e3c;
+        }
+
+        .btn.secondary {
+            background: #0f3460;
+            border: 1px solid #444;
+        }
+
+        .btn.secondary:hover {
+            background: #1a4a7a;
+        }
+
+        .section {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            max-width: 800px;
+        }
+
+        .section h2 {
+            font-size: 15px;
+            color: #aaa;
+            margin-bottom: 12px;
+        }
+
+        .csv-hint {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 12px;
+            line-height: 1.8;
+        }
+
+        .csv-hint code {
+            background: #0f3460;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        input[type="file"] {
+            color: white;
+            margin-right: 12px;
+        }
+
+        .answer-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .answer-item {
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .answer-item .q-num {
+            font-size: 11px;
+            color: #aaa;
+            margin-bottom: 4px;
+        }
+
+        .answer-item .answer-text {
+            font-size: 13px;
+            font-weight: bold;
+            color: white;
+            word-break: break-all;
+            min-height: 20px;
+        }
+
+        .status-msg {
+            margin-top: 12px;
+            font-size: 13px;
+            color: #4caf50;
+        }
+
+        .error-msg {
+            margin-top: 12px;
+            font-size: 13px;
+            color: #ef5350;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="top-bar">
+        <button class="btn secondary" onclick="location.href='judge.html'">← 一覧へ</button>
+        <h1>模範解答設定</h1>
+    </div>
+
+    <div class="section">
+        <h2>CSVファイルから読み込む</h2>
+        <div class="csv-hint">
+            CSVファイルの形式：1行目はヘッダー不要、1列目に問題番号、2列目に模範解答<br>
+            例：<code>1,東京</code> / <code>2,織田信長</code><br>
+            または1列のみ（1行目が1問目、2行目が2問目…）でも可
+        </div>
+        <input type="file" id="csv-file" accept=".csv" />
+        <button class="btn" onclick="loadCSV()">読み込む</button>
+        <div id="status-msg"></div>
+        <div class="answer-grid" id="answer-grid"></div>
+    </div>
+
+    <div class="section">
+        <h2>現在の設定</h2>
+        <button class="btn secondary" onclick="loadCurrent()">Firebaseから読み込む</button>
+        <button class="btn" style="margin-left:8px" onclick="saveCurrent()">Firebaseに保存</button>
+        <div class="answer-grid" id="current-grid"></div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDk-RpKCX5Hd-xNnrso_x5fd3S-vUoWKUc",
+            authDomain: "ciq-saiten.firebaseapp.com",
+            databaseURL: "https://ciq-saiten-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "ciq-saiten",
+            storageBucket: "ciq-saiten.firebasestorage.app",
+            messagingSenderId: "987606904586",
+            appId: "1:987606904586:web:b16876b8963a55a60d94f3"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const scorerRole = sessionStorage.getItem('scorer_role');
+        if (scorerRole !== 'admin') {
+            alert('管理者のみアクセスできます');
+            location.href = 'judge.html';
+        }
+
+        let answers = new Array(100).fill('');
+
+        function loadCSV() {
+            const file = document.getElementById('csv-file').files[0];
+            if (!file) { alert('CSVファイルを選択してください'); return; }
+
+            const reader = new FileReader();
+            reader.onload = e => {
+                const text = e.target.result;
+                const lines = text.split('\n').filter(l => l.trim() !== '');
+                answers = new Array(100).fill('');
+
+                lines.forEach((line, idx) => {
+                    const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+                    if (cols.length >= 2) {
+                        // 1列目が問題番号、2列目が解答
+                        const qNum = parseInt(cols[0]);
+                        if (qNum >= 1 && qNum <= 100) {
+                            answers[qNum - 1] = cols[1];
+                        }
+                    } else if (cols.length === 1 && idx < 100) {
+                        // 1列のみの場合は行順で対応
+                        answers[idx] = cols[0];
+                    }
+                });
+
+                renderGrid('answer-grid', answers);
+                document.getElementById('status-msg').textContent =
+                    `${lines.length}件読み込みました`;
+                document.getElementById('status-msg').className = 'status-msg';
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function renderGrid(gridId, data) {
+            const grid = document.getElementById(gridId);
+            grid.innerHTML = '';
+            data.forEach((ans, i) => {
+                const item = document.createElement('div');
+                item.className = 'answer-item';
+                item.innerHTML = `
+          <div class="q-num">${i + 1}問</div>
+          <div class="answer-text">${ans || '未設定'}</div>
+        `;
+                grid.appendChild(item);
+            });
+        }
+
+        async function loadCurrent() {
+            const snap = await db.ref('answers_text').get();
+            if (snap.exists()) {
+                const data = snap.val();
+                answers = Array.from({ length: 100 }, (_, i) => data[i + 1] || '');
+                renderGrid('current-grid', answers);
+            } else {
+                document.getElementById('current-grid').innerHTML =
+                    '<div style="color:#aaa;grid-column:1/-1;padding:12px">設定なし</div>';
+            }
+        }
+
+        async function saveCurrent() {
+            const data = {};
+            answers.forEach((ans, i) => { data[i + 1] = ans; });
+            await db.ref('answers_text').set(data);
+            alert('保存しました');
+            renderGrid('current-grid', answers);
+        }
+
+        // 起動時に現在の設定を読み込む
+        loadCurrent();
+    </script>
+</body>
+
+</html>

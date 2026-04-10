@@ -8,8 +8,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="js/cv.js"></script>
-    <script src="js/aruco.js"></script>
+    <script src="js/cv.js?v=1775799695"></script>
+    <script src="js/aruco.js?v=1775799695"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -238,10 +238,21 @@
                 const viewport = page.getViewport({ scale: config.scale || 1.5 });
                 workCanvas.width = viewport.width;
                 workCanvas.height = viewport.height;
-                // PDF透過背景対策: 描画前に白で塗りつぶす
-                workCtx.fillStyle = '#ffffff';
-                workCtx.fillRect(0, 0, workCanvas.width, workCanvas.height);
-                await page.render({ canvasContext: workCtx, viewport }).promise;
+                await page.render({ canvasContext: workCtx, viewport, background: 'rgba(255,255,255,1)' }).promise;
+
+                // 念のため、キャンバスの透明ピクセルを白に強制置換 (pdf.jsのバージョン対策)
+                const imgData = workCtx.getImageData(0, 0, workCanvas.width, workCanvas.height);
+                for (let i = 0; i < imgData.data.length; i += 4) {
+                    if (imgData.data[i + 3] < 255) {
+                        // 透明度に応じて白をミックスするか、単純に白で塗りつぶす
+                        const alpha = imgData.data[i + 3] / 255;
+                        imgData.data[i] = imgData.data[i] * alpha + 255 * (1 - alpha);
+                        imgData.data[i + 1] = imgData.data[i + 1] * alpha + 255 * (1 - alpha);
+                        imgData.data[i + 2] = imgData.data[i + 2] * alpha + 255 * (1 - alpha);
+                        imgData.data[i + 3] = 255;
+                    }
+                }
+                workCtx.putImageData(imgData, 0, 0);
 
                 // トンボ検出 (矩形ベース)
                 const detectedResult = detectTombo(config.tombo);

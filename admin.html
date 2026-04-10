@@ -158,7 +158,8 @@
         <button class="btn secondary" onclick="location.href='judge.html'">← 一覧へ</button>
         <h1>管理者画面</h1>
         <button class="btn secondary" style="margin-left: 20px;" onclick="location.href='saiten.html'">解答用紙/設定</button>
-        <div id="offline-badge" style="display: none; background: #e65100; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-left: auto; font-weight: bold;">
+        <div style="margin-left: auto; background: #0f3460; padding: 6px 12px; border-radius: 8px; font-size: 14px; border: 1px solid #444;" id="project-id-display"></div>
+        <div id="offline-badge" style="display: none; background: #e65100; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">
             ⚠️ 通信切断中 (自動再送待機中)
         </div>
     </div>
@@ -235,6 +236,8 @@
         if (!projectId || scorerRole !== 'admin') {
             location.href = 'index.html';
         }
+        
+        document.getElementById('project-id-display').textContent = `プロジェクトID: ${projectId}`;
 
         let GAS_URL = '';
         let totalQuestions = 100;

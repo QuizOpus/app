@@ -172,13 +172,12 @@
         // 2. 解答欄 (Questions Grid)
         // プレイアブルエリア：横方向はマーカー間+α、縦方向は上のマーカー下から下のマーカー上までの間
         const gridMarginX = 15;
-        const gridMarginTop = 20;
+        const gridMarginTop = 5;
         const gridSpaceWidth = pageWidth - gridMarginX * 2;
         const colWidth = gridSpaceWidth / qCols;
         
         const rows = Math.ceil(qCount / qCols);
-        // グリッドの高さを確保 (全高297 - 上20 - 下(マークシート分)35 = 242)
-        const maxGridHeight = 240;
+        const maxGridHeight = 255;
         const rowHeight = maxGridHeight / rows;
 
         doc.setLineWidth(0.2);

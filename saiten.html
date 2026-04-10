@@ -8,6 +8,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="js/cv.js"></script>
+  <script src="js/aruco.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -297,6 +299,53 @@
       overlay.style.left = '0';
       await page.render({ canvasContext: ctx, viewport }).promise;
       drawOverlay();
+      
+      // PDF描画直後にARマーカー自動検知を発動
+      setTimeout(detectArUco, 100);
+    }
+
+    function detectArUco() {
+      if (typeof AR === 'undefined') return;
+
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const detector = new AR.Detector();
+      const markers = detector.detect(imgData);
+
+      if (markers && markers.length > 0) {
+        // ARマーカー ID: 0, 1, 2, 3 の全てを抽出
+        const newRegions = [];
+        const requiredIds = [0, 1, 2, 3];
+        let foundAll = true;
+
+        requiredIds.forEach(id => {
+          const marker = markers.find(m => m.id === id);
+          if (marker && marker.corners) {
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            marker.corners.forEach(c => {
+               if (c.x < minX) minX = c.x;
+               if (c.y < minY) minY = c.y;
+               if (c.x > maxX) maxX = c.x;
+               if (c.y > maxY) maxY = c.y;
+            });
+            const w = maxX - minX;
+            const h = maxY - minY;
+            newRegions.push({ x: minX, y: minY, w, h });
+          } else {
+            foundAll = false;
+          }
+        });
+
+        if (foundAll) {
+          tomboRegions = newRegions;
+          document.getElementById('tombo-status').textContent = 'ARマーカー自動配置済（4箇所）';
+          document.getElementById('mode-status').textContent = 'ARマーカーが自動認識されました。受付番号の枠設定へ進んでください。';
+          setMode('mark');
+          drawOverlay();
+        } else {
+          const ids = markers.map(m => m.id).join(',');
+          document.getElementById('mode-status').textContent = `ARマーカーの一部が見つかりません。見つかったID: [${ids}]`;
+        }
+      }
     }
 
     function buildMarkCells(r) {

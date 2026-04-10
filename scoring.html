@@ -8,6 +8,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="js/cv.js"></script>
+    <script src="js/aruco.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -268,51 +270,27 @@
         }
 
         function detectTombo(refTombo) {
+            if (typeof AR === 'undefined') return { points: refTombo.map(r => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 })), error: true };
+
+            const imageData = workCtx.getImageData(0, 0, workCanvas.width, workCanvas.height);
+            const detector = new AR.Detector();
+            const markers = detector.detect(imageData);
+
             const detected = [];
-            const margin = 20; // 探索範囲の余裕（px）
             let error = false;
+            const requiredIds = [0, 1, 2, 3];
 
-            for (const ref of refTombo) {
-                const refCX = ref.x + ref.w / 2;
-                const refCY = ref.y + ref.h / 2;
-
-                const x1 = Math.max(0, Math.floor(ref.x - margin));
-                const y1 = Math.max(0, Math.floor(ref.y - margin));
-                const x2 = Math.min(workCanvas.width, Math.ceil(ref.x + ref.w + margin));
-                const y2 = Math.min(workCanvas.height, Math.ceil(ref.y + ref.h + margin));
-                const w = x2 - x1;
-                const h = y2 - y1;
-
-                if (w <= 0 || h <= 0) {
-                    detected.push({ x: refCX, y: refCY });
-                    error = true;
-                    continue;
-                }
-
-                const imageData = workCtx.getImageData(x1, y1, w, h);
-                let sumX = 0, sumY = 0, count = 0;
-                const threshold = 100; // 暗さの閾値
-
-                for (let py = 0; py < h; py++) {
-                    for (let px = 0; px < w; px++) {
-                        const idx = (py * w + px) * 4;
-                        const brightness = (imageData.data[idx] + imageData.data[idx + 1] + imageData.data[idx + 2]) / 3;
-                        if (brightness < threshold) {
-                            sumX += px;
-                            sumY += py;
-                            count++;
-                        }
-                    }
-                }
-
-                if (count > 10) {
-                    detected.push({
-                        x: x1 + sumX / count,
-                        y: y1 + sumY / count
-                    });
+            for (let i = 0; i < requiredIds.length; i++) {
+                const marker = markers.find(m => m.id === requiredIds[i]);
+                if (marker) {
+                    let sumX = 0, sumY = 0;
+                    marker.corners.forEach(c => { sumX += c.x; sumY += c.y; });
+                    // マーカーの正確な重心点を抽出
+                    detected.push({ x: sumX / 4, y: sumY / 4 });
                 } else {
-                    // トンボが見つからない場合は設定値の中心を使用
-                    detected.push({ x: refCX, y: refCY });
+                    // 見つからない場合は設定値をフォールバックとして使用（エラーフラグはON）
+                    const ref = refTombo[i] || refTombo[0];
+                    detected.push({ x: ref.x + ref.w / 2, y: ref.y + ref.h / 2 });
                     error = true;
                 }
             }

@@ -244,8 +244,30 @@
                 // Step 2: PDFを上に描画
                 await page.render({ canvasContext: workCtx, viewport }).promise;
 
-                // トンボ検出 (矩形ベース)
-                const detectedResult = detectTombo(config.tombo);
+                // トンボ検出（逆さま自動補正付き）
+                let detectedResult = detectTombo(config.tombo);
+
+                // 4つ全部見つからなかったら、180°回転して再試行
+                if (detectedResult.error) {
+                    // workCanvasを180°回転
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = workCanvas.width;
+                    tempCanvas.height = workCanvas.height;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    tempCtx.translate(tempCanvas.width, tempCanvas.height);
+                    tempCtx.rotate(Math.PI);
+                    tempCtx.drawImage(workCanvas, 0, 0);
+                    
+                    // 回転した画像をworkCanvasに書き戻し
+                    workCtx.clearRect(0, 0, workCanvas.width, workCanvas.height);
+                    workCtx.drawImage(tempCanvas, 0, 0);
+                    
+                    const rotatedResult = detectTombo(config.tombo);
+                    // 回転版のほうがエラーなし、または検出数が多ければそちらを採用
+                    if (!rotatedResult.error) {
+                        detectedResult = rotatedResult;
+                    }
+                }
 
                 // 完全な射影変換行列（ホモグラフィ）を計算し、歪みを正確に補正する
                 const refCenterPoints = config.tombo.map(r => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 }));
@@ -255,9 +277,10 @@
                 const correctedMarkCells = config.markCells.map(cell => transformRegion(cell, transform));
                 const entryNumber = readEntryNumber(correctedMarkCells);
 
-                // 100問の解答欄を切り出し（補正済み座標を使用）
+                // 解答欄を切り出し（補正済み座標を使用）
                 const cells = [];
-                for (let q = 0; q < 100; q++) {
+                const qTotal = config.questionCount || 100;
+                for (let q = 0; q < qTotal; q++) {
                     const correctedRegion = transformRegion(config.answerRegions[q], transform);
                     const imageData = cutRegion(correctedRegion);
                     cells.push({ q: q + 1, imageData });

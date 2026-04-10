@@ -153,9 +153,21 @@
           config.tombo.push({ x: p.x, y: p.y, w: markerSize, h: markerSize });
         });
 
-        // フォント設定
+        // フォントの読み込み (日本語対応)
+        const fontRes = await fetch("fonts/BIZUDGothic-Regular.ttf");
+        const fontBuffer = await fontRes.arrayBuffer();
+        let binary = '';
+        const bytes = new Uint8Array(fontBuffer);
+        for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        const fontBase64 = window.btoa(binary);
+        doc.addFileToVFS('BIZUDGothic.ttf', fontBase64);
+        doc.addFont('BIZUDGothic.ttf', 'BIZUDGothic', 'normal');
+        doc.setFont('BIZUDGothic');
         doc.setFontSize(8);
         doc.setTextColor(50);
+
 
         // 2. 解答欄 (Questions Grid)
         // プレイアブルエリア：横方向はマーカー間+α、縦方向は上のマーカー下から下のマーカー上までの間
@@ -166,7 +178,7 @@
         
         const rows = Math.ceil(qCount / qCols);
         // グリッドの高さを確保 (全高297 - 上20 - 下(マークシート分)35 = 242)
-        const maxGridHeight = 242;
+        const maxGridHeight = 192;
         const rowHeight = maxGridHeight / rows;
 
         doc.setLineWidth(0.2);
@@ -192,34 +204,44 @@
         // 3. 受付番号マークシート (Bottom Left)
         const bottomY = gridMarginTop + maxGridHeight + 5; // y = 267
         doc.setFontSize(10);
-        doc.text("Entry No.", 15, bottomY + 4);
+        doc.text("受付番号", 15, bottomY + 4);
 
         const markSheetX = 35;
-        const markSheetY = bottomY;
-        const bubbleW = 6;
-        const bubbleH = 5;
+        const markSheetY = bottomY + 8;
+        const bubbleW = 4;
+        const bubbleH = 6;
         
-        doc.setFontSize(7);
-        for (let row = 0; row < 3; row++) {
-          for (let col = 0; col < 10; col++) {
-            const cx = markSheetX + col * (bubbleW + 1);
-            const cy = markSheetY + row * (bubbleH + 2);
+        doc.setFontSize(8);
+        for (let col = 0; col < 3; col++) {
+          // 手書き枠
+          const cx = markSheetX + col * (bubbleW + 2);
+          doc.rect(cx, markSheetY - 7, bubbleW, 6, 'S');
+
+          for (let row = 0; row < 10; row++) {
+            const cy = markSheetY + row * (bubbleH + 1.0);
             
             doc.ellipse(cx + bubbleW/2, cy + bubbleH/2, bubbleW/2, bubbleH/2, 'S');
-            doc.text(col.toString(), cx + bubbleW/2 - 1, cy + bubbleH/2 + 1);
+            doc.text(row.toString(), cx + bubbleW/2, cy + bubbleH/2, { align: 'center', baseline: 'middle' });
             
-            // config に保存
-            config.markCells.push({ x: cx, y: cy, w: bubbleW, h: bubbleH });
+            // scoring.html は cell.row を 桁数(0-2)、cell.col を 値(0-9) とみなす
+            config.markCells.push({ x: cx, y: cy, w: bubbleW, h: bubbleH, row: col, col: row });
           }
         }
 
         // 4. 名前・所属枠 (Bottom Right)
-        const nameBoxX = 110;
-        const nameBoxY = bottomY;
-        doc.rect(nameBoxX, nameBoxY, 85, 18, 'S');
-        doc.line(nameBoxX + 20, nameBoxY, nameBoxX + 20, nameBoxY + 18, 'S');
-        doc.setFontSize(10);
-        doc.text("Name / Affiliation", nameBoxX + 2, nameBoxY + 10);
+        const nameBoxX = 75;
+        const nameBoxY = bottomY - 3;
+        const boxW = 120;
+        doc.rect(nameBoxX, nameBoxY, boxW, 26, 'S');
+        doc.line(nameBoxX + boxW/3, nameBoxY, nameBoxX + boxW/3, nameBoxY + 26, 'S');
+        doc.line(nameBoxX + (boxW*2)/3, nameBoxY, nameBoxX + (boxW*2)/3, nameBoxY + 26, 'S');
+
+        // 上部ラベル
+        doc.setFontSize(8);
+        doc.text("学年", nameBoxX + 2, nameBoxY + 4);
+        doc.text("氏名", nameBoxX + boxW/3 + 2, nameBoxY + 4);
+        doc.text("所属", nameBoxX + (boxW*2)/3 + 2, nameBoxY + 4);
+
 
         // PDFのダウンロード
         doc.save(`answer_sheet_${qCount}q.pdf`);

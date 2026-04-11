@@ -2,13 +2,19 @@
   "rules": {
     "projects": {
       "$projectId": {
-        "settings": {
+        "publicSettings": {
           ".read": true,
           ".write": true
         },
-        "config": {
+        "entries": {
           ".read": true,
           ".write": true
+        },
+        "protected": {
+          "$secretHash": {
+            ".read": true,
+            ".write": true
+          }
         },
         "answers_text": {
           ".read": true,
@@ -22,7 +28,7 @@
           ".read": true,
           ".write": true
         },
-        "entries": {
+        "config": {
           ".read": true,
           ".write": true
         },
@@ -31,6 +37,10 @@
           ".write": true
         },
         "disclosure": {
+          ".read": true,
+          ".write": true
+        },
+        "settings": {
           ".read": true,
           ".write": true
         }

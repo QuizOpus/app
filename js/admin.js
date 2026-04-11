@@ -66,14 +66,14 @@
                 });
             };
 
-            const configSnap = await db.ref(`projects/${projectId}/config`).once('value');
+            const configSnap = await db.ref(`projects/${projectId}/protected/${secretHash}/config`).once('value');
             if (configSnap.exists()) {
                 const cfg = configSnap.val();
                 totalQuestions = cfg.questionCount || 100;
                 document.getElementById('question-count').value = totalQuestions;
             }
 
-            const entryConfigSnap = await db.ref(`projects/${projectId}/entryConfig`).once('value');
+            const entryConfigSnap = await db.ref(`projects/${projectId}/protected/${secretHash}/entryConfig`).once('value');
             if (entryConfigSnap.exists()) {
                 const ec = entryConfigSnap.val();
                 document.getElementById('entry-list-toggle').checked = !!ec.listEnabled;
@@ -98,18 +98,18 @@
                 const data = await res.json();
                 if (data) entryNumbers = Object.keys(data).map(Number).sort((a, b) => a - b);
             } catch (e) {
-                const snap = await db.ref(`projects/${projectId}/answers`).get();
+                const snap = await db.ref(`projects/${projectId}/protected/${secretHash}/answers`).get();
                 if (snap.exists()) entryNumbers = Object.keys(snap.val()).map(Number).sort((a, b) => a - b);
             }
 
             // スコアリアルタイム
-            db.ref(`projects/${projectId}/scores`).on('value', snap => {
+            db.ref(`projects/${projectId}/protected/${secretHash}/scores`).on('value', snap => {
                 scoresData = snap.val() || {};
                 updateStatsView();
             });
 
             // 模範解答読み込み
-            const modelSnap = await db.ref(`projects/${projectId}/answers_text`).get();
+            const modelSnap = await db.ref(`projects/${projectId}/protected/${secretHash}/answers_text`).get();
             modelAnswers = new Array(totalQuestions).fill('');
             if (modelSnap.exists()) {
                 const d = modelSnap.val();
@@ -166,7 +166,7 @@
             if (!qCount || qCount < 10 || qCount % 10 !== 0) { showAdminToast("問題数は10の倍数で指定してください"); return; }
             try {
                 const config = await buildLayoutConfig(qCount);
-                await db.ref(`projects/${projectId}/config`).set(config);
+                await db.ref(`projects/${projectId}/protected/${secretHash}/config`).set(config);
                 totalQuestions = qCount;
                 showAdminToast("問題数とレイアウトをFirebaseに保存しました！", "success");
             } catch (err) {
@@ -252,7 +252,7 @@
         async function loadAnswers() {
             const file = document.getElementById('pdf-file').files[0];
             if (!file) { showAdminToast('PDFを選択してください'); return; }
-            const snap = await db.ref(`projects/${projectId}/config`).get();
+            const snap = await db.ref(`projects/${projectId}/protected/${secretHash}/config`).get();
             if (!snap.exists()) { showAdminToast('座標設定が見つかりません。先に回答用紙を発行してください。'); return; }
             scanConfig = snap.val();
             const arrayBuffer = await file.arrayBuffer();
@@ -370,7 +370,7 @@
                     uploadedAt: firebase.database.ServerValue.TIMESTAMP,
                     cells: a.cells.reduce((o, c) => { o[`q${c.q}`] = c.imageData; return o; }, {})
                 };
-                await db.ref(`projects/${projectId}/answers/${a.entryNumber}`).set(data);
+                await db.ref(`projects/${projectId}/protected/${secretHash}/answers/${a.entryNumber}`).set(data);
                 current++;
                 document.getElementById('status-text').textContent = `保存中... (${current}/${total})`;
             }
@@ -390,7 +390,7 @@
                 const data = await res.json();
                 entryListData = data ? Object.keys(data).map(Number).sort((a, b) => a - b) : [];
             } catch (e) {
-                const snap = await db.ref(`projects/${projectId}/answers`).get();
+                const snap = await db.ref(`projects/${projectId}/protected/${secretHash}/answers`).get();
                 entryListData = snap.exists() ? Object.keys(snap.val()).map(Number).sort((a, b) => a - b) : [];
             }
             entryNumbers = [...entryListData]; // 全体のentryNumbersも更新
@@ -423,8 +423,8 @@
         async function deleteEntry(num, e) {
             e?.stopPropagation();
             if (!confirm(`受付番号 ${num} の答案を削除しますか？`)) return;
-            await db.ref(`projects/${projectId}/answers/${num}`).remove();
-            await db.ref(`projects/${projectId}/scores/${num}`).remove();
+            await db.ref(`projects/${projectId}/protected/${secretHash}/answers/${num}`).remove();
+            await db.ref(`projects/${projectId}/protected/${secretHash}/scores/${num}`).remove();
             loadEntryList();
         }
         async function batchDelete() {
@@ -432,7 +432,7 @@
             if (!checked.length) return;
             if (!confirm(`${checked.length}件の答案を削除しますか？`)) return;
             const updates = {};
-            checked.forEach(num => { updates[`projects/${projectId}/answers/${num}`] = null; updates[`projects/${projectId}/scores/${num}`] = null; });
+            checked.forEach(num => { updates[`projects/${projectId}/protected/${secretHash}/answers/${num}`] = null; updates[`projects/${projectId}/protected/${secretHash}/scores/${num}`] = null; });
             await db.ref('/').update(updates);
             loadEntryList();
         }
@@ -469,7 +469,7 @@
         async function saveModelAnswers() {
             const data = {};
             modelAnswers.forEach((ans, idx) => { if (ans) data[idx + 1] = ans; });
-            await db.ref(`projects/${projectId}/answers_text`).set(data);
+            await db.ref(`projects/${projectId}/protected/${secretHash}/answers_text`).set(data);
             document.getElementById('model-status').textContent = 'Firebaseに保存しました'; document.getElementById('model-status').style.display = 'block';
             setTimeout(() => document.getElementById('model-status').style.display = 'none', 3000);
         }
@@ -577,40 +577,9 @@
             showAdminToast('プロジェクト名を更新しました', 'success');
         }
 
-        async function updateProjectPassword() {
-            const oldP = document.getElementById('setting-old-pwd').value;
-            const newP = document.getElementById('setting-new-pwd').value;
-            const confirmP = document.getElementById('setting-confirm-pwd').value;
-            if(!oldP || !newP || !confirmP) return showAdminToast('全てのパスワード欄を入力してください');
-            if(newP !== confirmP) return showAdminToast('新しいパスワードが一致しません');
-            if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/.test(newP)) {
-                return showAdminToast('パスワードは英大文字、英小文字、数字をそれぞれ含み8文字以上である必要があります');
-            }
-
-            const snap = await db.ref(`projects/${projectId}/settings`).get();
-            const set = snap.val();
-            const oldHash = await hashPassword(oldP);
-            const isValid = set.passwordHash ? (set.passwordHash === oldHash) : (set.password === oldP);
-            
-            if(!isValid) return showAdminToast('現在のパスワードが間違っています');
-
-            const newHash = await hashPassword(newP);
-            await db.ref(`projects/${projectId}/settings/passwordHash`).set(newHash);
-            // Delete old plaintext pwd if exists
-            if (set.password) await db.ref(`projects/${projectId}/settings/password`).remove();
-            
-            showAdminToast('パスワードを更新しました', 'success');
-            document.getElementById('setting-old-pwd').value = '';
-            document.getElementById('setting-new-pwd').value = '';
-            document.getElementById('setting-confirm-pwd').value = '';
-        }
-
-        // ============================
-        // データクリーンアップ処理
-        // ============================
         async function purgeOldImages() {
             // 3日以上前のanswers画像を全削除
-            const snap = await db.ref(`projects/${projectId}/answers`).get();
+            const snap = await db.ref(`projects/${projectId}/protected/${secretHash}/answers`).get();
             if (!snap.exists()) return;
             const now = Date.now();
             const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
@@ -619,8 +588,8 @@
                 const data = child.val();
                 if (data.uploadedAt && (now - data.uploadedAt > THREE_DAYS)) {
                     // 画像データのみnullにする（成績の参照番号としては残す）
-                    updates[`projects/${projectId}/answers/${child.key}/pageImage`] = null;
-                    updates[`projects/${projectId}/answers/${child.key}/cells`] = null;
+                    updates[`projects/${projectId}/protected/${secretHash}/answers/${child.key}/pageImage`] = null;
+                    updates[`projects/${projectId}/protected/${secretHash}/answers/${child.key}/cells`] = null;
                 }
             });
             if (Object.keys(updates).length > 0) {
@@ -633,7 +602,7 @@
         // ============================
         async function toggleEntryList() {
             const enabled = document.getElementById('entry-list-toggle').checked;
-            await db.ref(`projects/${projectId}/entryConfig/listEnabled`).set(enabled);
+            await db.ref(`projects/${projectId}/protected/${secretHash}/entryConfig/listEnabled`).set(enabled);
         }
 
         async function loadAdminEntries() {
@@ -648,8 +617,19 @@
                 }
 
                 tbody.innerHTML = '';
-                snap.forEach(child => {
-                    const v = child.val();
+                const children = [];
+                snap.forEach(c => { children.push(c.val()); });
+                
+                for (const v of children) {
+                    let pii = v;
+                    if (v.encryptedPII) {
+                        try {
+                            const privJwk = JSON.parse(session.get('privateKeyJwk'));
+                            const jsonStr = await AppCrypto.decryptRSA(v.encryptedPII, privJwk);
+                            pii = JSON.parse(jsonStr);
+                        } catch(e) { console.error("Decryption failed", e); }
+                    }
+                    
                     const tr = document.createElement('tr');
                     if (v.status === 'canceled') tr.style.opacity = '0.5';
                     const statText = v.status === 'canceled' ? '<span style="color:#ef5350">ｷｬﾝｾﾙ</span>'
@@ -657,15 +637,15 @@
 
                     tr.innerHTML = `
                     <td style="padding:8px;border:1px solid #444;">${v.entryNumber || '-'}</td>
-                    <td style="padding:8px;border:1px solid #444;">${v.familyName} ${v.firstName}<br><span style="font-size:11px;color:#aaa">${v.familyNameKana} ${v.firstNameKana}</span></td>
-                    <td style="padding:8px;border:1px solid #444;">${v.entryName || ''}</td>
-                    <td style="padding:8px;border:1px solid #444;">${v.affiliation || ''}</td>
-                    <td style="padding:8px;border:1px solid #444;">${v.grade || ''}</td>
-                    <td style="padding:8px;border:1px solid #444;"><span style="font-size:11px;color:#aaa">${v.email || ''}</span><br>${v.inquiry || '-'}</td>
+                    <td style="padding:8px;border:1px solid #444;">${pii.familyName || '-'} ${pii.firstName || '-'}<br><span style="font-size:11px;color:#aaa">${pii.familyNameKana || ''} ${pii.firstNameKana || ''}</span></td>
+                    <td style="padding:8px;border:1px solid #444;">${pii.entryName || ''}</td>
+                    <td style="padding:8px;border:1px solid #444;">${pii.affiliation || ''}</td>
+                    <td style="padding:8px;border:1px solid #444;">${pii.grade || ''}</td>
+                    <td style="padding:8px;border:1px solid #444;"><span style="font-size:11px;color:#aaa">${pii.email || ''}</span><br>${pii.inquiry || '-'}</td>
                     <td style="padding:8px;border:1px solid #444;font-weight:bold;">${statText}</td>
                 `;
                     tbody.appendChild(tr);
-                });
+                }
             } catch (e) {
                 tbody.innerHTML = '<tr><td colspan="7" style="padding:12px;text-align:center;color:#ef5350">読み込みに失敗しました: ' + e.message + '</td></tr>';
             }
@@ -675,15 +655,27 @@
             const snap = await db.ref(`projects/${projectId}/entries`).orderByChild('entryNumber').get();
             if (!snap.exists()) return;
             const rows = [['受付番号', '姓', '名', 'セイ', 'メイ', 'メールアドレス', '所属機関', '学年', 'エントリー名', '意気込み', '連絡事項', '状態', 'UUID']];
-            snap.forEach(child => {
-                const v = child.val();
+            
+            const children = [];
+            snap.forEach(child => { children.push(child.val()); });
+            
+            for (const v of children) {
+                let pii = v;
+                if (v.encryptedPII) {
+                    try {
+                        const privJwk = JSON.parse(session.get('privateKeyJwk'));
+                        const jsonStr = await AppCrypto.decryptRSA(v.encryptedPII, privJwk);
+                        pii = JSON.parse(jsonStr);
+                    } catch(e) { console.error("Decryption failed", e); }
+                }
+                
                 const stat = v.status === 'canceled' ? 'canceled' : v.checkedIn ? 'checkedIn' : 'registered';
                 rows.push([
-                    v.entryNumber, v.familyName, v.firstName, v.familyNameKana, v.firstNameKana,
-                    v.email, v.affiliation, v.grade, v.entryName, `"${(v.message || '').replace(/"/g, '""')}"`,
-                    `"${(v.inquiry || '').replace(/"/g, '""')}"`, stat, v.uuid
+                    v.entryNumber, pii.familyName || '', pii.firstName || '', pii.familyNameKana || '', pii.firstNameKana || '',
+                    pii.email || '', pii.affiliation || '', pii.grade || '', pii.entryName || '', `"${(pii.message || '').replace(/"/g, '""')}"`,
+                    `"${(pii.inquiry || '').replace(/"/g, '""')}"`, stat, v.uuid
                 ]);
-            });
+            }
             const csv = rows.map(r => r.join(',')).join('\n');
             const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
             const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
@@ -692,7 +684,7 @@
 
         async function toggleDisclosure() {
             const enabled = document.getElementById('disclosure-toggle').checked;
-            await db.ref(`projects/${projectId}/entryConfig/disclosureEnabled`).set(enabled);
+            await db.ref(`projects/${projectId}/protected/${secretHash}/entryConfig/disclosureEnabled`).set(enabled);
             document.getElementById('disclosure-url').style.display = enabled ? 'block' : 'none';
         }
 
@@ -723,7 +715,7 @@
                         results[`q${q}`] = r;
                     }
                     const score = Object.values(results).filter(x => x === 'correct').length;
-                    updates[`projects/${projectId}/disclosure/${en}`] = {
+                    updates[`projects/${projectId}/protected/${secretHash}/disclosure/${en}`] = {
                         score,
                         totalQuestions,
                         results

@@ -54,8 +54,8 @@ const params = new URLSearchParams(location.search);
             const pw = generatePW();
 
             try {
-                // トランザクションで受付番号を取得
-                const counterRef = db.ref(`projects/${projectId}/entryConfig/lastEntryNumber`);
+                // トランザクションで受付番号を取得 (公開設定配下)
+                const counterRef = db.ref(`projects/${projectId}/publicSettings/lastEntryNumber`);
                 const { committed, snapshot } = await counterRef.transaction((currentValue) => {
                     return (currentValue || 0) + 1;
                 });
@@ -65,21 +65,19 @@ const params = new URLSearchParams(location.search);
                 }
 
                 const entryNumber = snapshot.val();
-                const pwHash = await hashPassword(pw);
+                const pwHash = await AppCrypto.hashPassword(pw);
+
+                // 公開鍵を取得してPIIを暗号化
+                const pubSnap = await db.ref(`projects/${projectId}/publicSettings/publicKey`).once('value');
+                if (!pubSnap.exists()) throw new Error("セキュリティキーが取得できません");
+                
+                const piiData = { email, familyName, firstName, familyNameKana, firstNameKana, affiliation, grade, entryName, message, inquiry };
+                const encryptedPII = await AppCrypto.encryptRSA(JSON.stringify(piiData), pubSnap.val());
 
                 const entryData = {
                     uuid,
-                    email,
-                    familyName,
-                    firstName,
-                    familyNameKana,
-                    firstNameKana,
-                    affiliation,
-                    grade,
-                    entryName,
-                    message,
-                    inquiry,
                     entryNumber,
+                    encryptedPII,
                     disclosurePw: pwHash,
                     status: 'registered',
                     checkedIn: false,
@@ -132,20 +130,24 @@ const params = new URLSearchParams(location.search);
 
             try {
                 // プロジェクト名を取得して表示
-                const snap = await db.ref(`projects/${projectId}/settings`).once('value');
+                const snap = await db.ref(`projects/${projectId}/publicSettings`).once('value');
                 if (snap.exists()) {
                     const settings = snap.val();
                     const pName = settings.projectName || '大会エントリー';
                     document.getElementById('project-title').textContent = pName;
-                    document.querySelector('.logo p').textContent = pName + ' エントリー';
+                    document.querySelector('.logo p').innerHTML = `<i class="fa-solid fa-pen-nib"></i> ${pName} エントリー`;
                     document.title = pName + ' - エントリー';
-                }
-
-                // エントリー受付が無効になっていないかチェック
-                const configSnap = await db.ref(`projects/${projectId}/entryConfig/entryEnabled`).once('value');
-                if (configSnap.exists() && configSnap.val() === false) {
+                    
+                    // エントリー受付が無効になっていないかチェック
+                    if (settings.entryConfig && settings.entryConfig.entryEnabled === false) {
+                        document.getElementById('form-card').style.display = 'none';
+                        document.getElementById('disabled-card').style.display = 'block';
+                    }
+                } else {
                     document.getElementById('form-card').style.display = 'none';
-                    document.getElementById('disabled-card').style.display = 'block';
+                    const d = document.getElementById('disabled-card');
+                    d.innerHTML = '<p>プロジェクトが見つかりません。</p><p style="margin-top:8px;font-size:13px">正しいエントリーURLへアクセスしてください。</p>';
+                    d.style.display = 'block';
                 }
             } catch (e) {
             }

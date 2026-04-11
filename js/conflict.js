@@ -15,7 +15,7 @@ const projectId = session.projectId;
         let totalQuestions = 100;
 
         async function init() {
-            const configSnap = await db.ref(`projects/${projectId}/config`).once('value');
+            const configSnap = await db.ref(`projects/${projectId}/protected/${secretHash}/config`).once('value');
             if(configSnap.exists()) {
                 totalQuestions = configSnap.val().questionCount || 100;
             }
@@ -25,19 +25,19 @@ const projectId = session.projectId;
                 const data = await res.json();
                 if (data) entryNumbers = Object.keys(data).map(Number).sort((a, b) => a - b);
             } catch(e) {
-                const answersSnap = await db.ref(`projects/${projectId}/answers`).get();
+                const answersSnap = await db.ref(`projects/${projectId}/protected/${secretHash}/answers`).get();
                 if (answersSnap.exists()) {
                     answersData = answersSnap.val();
                     entryNumbers = Object.keys(answersData).map(Number).sort((a, b) => a - b);
                 }
             }
 
-            const answersTextSnap = await db.ref(`projects/${projectId}/answers_text`).get();
+            const answersTextSnap = await db.ref(`projects/${projectId}/protected/${secretHash}/answers_text`).get();
             if (answersTextSnap.exists()) {
                 answersText = answersTextSnap.val();
             }
 
-            db.ref(`projects/${projectId}/scores`).on('value', snap => {
+            db.ref(`projects/${projectId}/protected/${secretHash}/scores`).on('value', snap => {
                 scoresData = snap.val() || {};
                 render();
             });
@@ -68,7 +68,7 @@ const projectId = session.projectId;
             const promises = conflicts.map(async c => {
                 if (!answersData[c.entryNum]) answersData[c.entryNum] = { cells: {} };
                 if (answersData[c.entryNum].cells[`q${c.q}`] === undefined) {
-                    const snap = await db.ref(`projects/${projectId}/answers/${c.entryNum}/cells/q${c.q}`).get();
+                    const snap = await db.ref(`projects/${projectId}/protected/${secretHash}/answers/${c.entryNum}/cells/q${c.q}`).get();
                     answersData[c.entryNum].cells[`q${c.q}`] = snap.val() || null;
                 }
             });
@@ -136,7 +136,7 @@ const projectId = session.projectId;
         }
 
         async function setFinal(q, entryNum, result) {
-            await db.ref(`projects/${projectId}/scores/__final__q${q}/${entryNum}`).set(result);
+            await db.ref(`projects/${projectId}/protected/${secretHash}/scores/__final__q${q}/${entryNum}`).set(result);
         }
 
         function selectConflictCard(idx) {
@@ -205,7 +205,7 @@ const projectId = session.projectId;
             const name = masterData[entryNum]?.name || `受付番号 ${entryNum}`;
             overlay.innerHTML = `<div class="preview-header"><h2>${name} の解答用紙</h2><button class="preview-close" onclick="document.getElementById('preview-overlay').classList.remove('show')">✕ 閉じる</button></div><div id="preview-content" style="text-align:center"><div style="color:#aaa">読み込み中...</div></div>`;
             overlay.classList.add('show');
-            const snap = await db.ref(`projects/${projectId}/answers/${entryNum}/pageImage`).get();
+            const snap = await db.ref(`projects/${projectId}/protected/${secretHash}/answers/${entryNum}/pageImage`).get();
             const pc = document.getElementById('preview-content');
             if (snap.exists()) {
                 pc.innerHTML = `<img src="${snap.val()}" alt="${name}" style="max-width:100%;border-radius:8px;background:white;">`;

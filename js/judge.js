@@ -8,7 +8,7 @@ const projectId = session.projectId;
 
         async function initializeApp() {
             // プロジェクト設定を取得
-            const snapConfig = await db.ref(`projects/${projectId}/config`).once('value');
+            const snapConfig = await db.ref(`projects/${projectId}/protected/${secretHash}/config`).once('value');
             if (snapConfig.exists()) {
                 totalQuestions = snapConfig.val().questionCount || 100;
             }
@@ -43,19 +43,38 @@ const projectId = session.projectId;
                 qGrid.appendChild(card);
             }
 
-            db.ref(`projects/${projectId}/scores`).on('value', snap => {
+            db.ref(`projects/${projectId}/protected/${secretHash}/scores`).on('value', snap => {
                 updateGrid(snap.val() || {});
             });
         }
 
         function fetchEntriesMaster() {
-            db.ref(`projects/${projectId}/entries`).once('value', snap => {
+            db.ref(`projects/${projectId}/entries`).once('value', async snap => {
                 if (snap.exists()) {
                     const masterData = {};
-                    snap.forEach(c => {
-                        const v = c.val();
-                        if (v.entryNumber) masterData[v.entryNumber] = { name: `${v.familyName} ${v.firstName}` };
-                    });
+                    const privJwkStr = session.get('privateKeyJwk');
+                    let privJwk = null;
+                    if (privJwkStr) {
+                        try { privJwk = JSON.parse(privJwkStr); } catch(e){}
+                    }
+
+                    const children = [];
+                    snap.forEach(c => children.push(c.val()));
+                    
+                    for (const v of children) {
+                        if (!v.entryNumber) continue;
+                        let name = '回答者 ' + v.entryNumber;
+                        if (v.encryptedPII && privJwk) {
+                            try {
+                                const jsonStr = await AppCrypto.decryptRSA(v.encryptedPII, privJwk);
+                                const pii = JSON.parse(jsonStr);
+                                name = `${pii.familyName} ${pii.firstName}`;
+                            } catch(e) {}
+                        } else if (!v.encryptedPII && v.familyName) {
+                            name = `${v.familyName} ${v.firstName}`;
+                        }
+                        masterData[v.entryNumber] = { name };
+                    }
                     localStorage.setItem('masterData', JSON.stringify(masterData));
                 }
             });

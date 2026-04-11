@@ -20,7 +20,7 @@ const params = new URLSearchParams(location.search);
         }
 
         // 開示が有効かチェック
-        const cfgSnap = await db.ref(`projects/${projectId}/entryConfig/disclosureEnabled`).get();
+        const cfgSnap = await db.ref(`projects/${projectId}/protected/${secretHash}/entryConfig/disclosureEnabled`).get();
         disclosureEnabled = cfgSnap.exists() && cfgSnap.val() === true;
 
         if (!disclosureEnabled) {
@@ -77,7 +77,7 @@ const params = new URLSearchParams(location.search);
             }
 
             // 開示データ取得
-            const discSnap = await db.ref(`projects/${projectId}/disclosure/${num}`).get();
+            const discSnap = await db.ref(`projects/${projectId}/protected/${secretHash}/disclosure/${num}`).get();
             if (!discSnap.exists()) {
                 errEl.textContent = '開示データがまだ生成されていません。管理者にお問い合わせください。';
                 errEl.style.display = 'block'; btn.disabled = false; btn.textContent = '成績を確認する'; return;

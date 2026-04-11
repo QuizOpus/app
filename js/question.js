@@ -14,7 +14,7 @@ const projectId = session.projectId;
 
         async function init() {
             // 模範解答読み込み
-            const answerSnap = await db.ref(`projects/${projectId}/answers_text/${currentQ}`).get();
+            const answerSnap = await db.ref(`projects/${projectId}/protected/${secretHash}/answers_text/${currentQ}`).get();
             const answerText = answerSnap.exists() ? answerSnap.val() : '未設定';
             document.getElementById('answer-badge').textContent = answerText;
 
@@ -24,7 +24,7 @@ const projectId = session.projectId;
                 const data = await res.json();
                 if (data) entryNumbers = Object.keys(data).map(Number).sort((a, b) => a - b);
             } catch(e) {
-                const answersSnap = await db.ref(`projects/${projectId}/answers`).get();
+                const answersSnap = await db.ref(`projects/${projectId}/protected/${secretHash}/answers`).get();
                 if (answersSnap.exists()) entryNumbers = Object.keys(answersSnap.val()).map(Number).sort((a, b) => a - b);
             }
 
@@ -35,17 +35,17 @@ const projectId = session.projectId;
 
             // 現在の設問の画像のみを並列取得 (100倍高速化)
             const fetchPromises = entryNumbers.map(async (entryNum) => {
-                const imgSnap = await db.ref(`projects/${projectId}/answers/${entryNum}/cells/q${currentQ}`).get();
+                const imgSnap = await db.ref(`projects/${projectId}/protected/${secretHash}/answers/${entryNum}/cells/q${currentQ}`).get();
                 if (!answers[entryNum]) answers[entryNum] = { cells: {} };
                 answers[entryNum].cells[`q${currentQ}`] = imgSnap.val();
             });
             await Promise.all(fetchPromises);
 
             // 採点者として登録
-            await db.ref(`projects/${projectId}/scores/__scorers__q${currentQ}/${scorerName}`).set(true);
+            await db.ref(`projects/${projectId}/protected/${secretHash}/scores/__scorers__q${currentQ}/${scorerName}`).set(true);
 
             // スコアのリアルタイム監視
-            db.ref(`projects/${projectId}/scores`).on('value', snap => {
+            db.ref(`projects/${projectId}/protected/${secretHash}/scores`).on('value', snap => {
                 const allScores = snap.val() || {};
                 myScores = {};
                 entryNumbers.forEach(entryNum => {
@@ -98,7 +98,7 @@ const projectId = session.projectId;
         }
 
         function mark(entryNum, result) {
-            db.ref(`projects/${projectId}/scores/${entryNum}/q${currentQ}/${scorerName}`).set(result);
+            db.ref(`projects/${projectId}/protected/${secretHash}/scores/${entryNum}/q${currentQ}/${scorerName}`).set(result);
         }
 
         function selectCard(idx) {
@@ -127,7 +127,33 @@ const projectId = session.projectId;
             }
         }
 
-        document.addEventListener('keydown', (e) => {
+        
+        window.scoreSelected = function(status) {
+            if (entryNumbers.length === 0) return;
+            const entryNum = entryNumbers[selectedIndex];
+            
+            // UI visual feedback
+            const card = Object.values(document.querySelectorAll('.answer-card')).find(el => {
+                const badge = el.querySelector('.entry-num');
+                return badge && badge.textContent === entryNum;
+            });
+            
+            if (card) {
+                card.style.transform = 'scale(1.05)';
+                setTimeout(() => card.style.transform = 'scale(1)', 150);
+            }
+
+            db.ref(`projects/${projectId}/protected/${secretHash}/scores/${entryNum}/q${currentQ}/${scorerName}`).set(status);
+
+            // 最後の回答でなければ自動で次の回答へ移動
+            if (selectedIndex < entryNumbers.length - 1) {
+                selectedIndex++;
+                updateSelection();
+            }
+        };
+
+        // Re-use logic in keydown
+document.addEventListener('keydown', (e) => {
             if (entryNumbers.length === 0) return;
             const key = e.key;
             if (key === 'm' || key === 'M') {
@@ -175,9 +201,9 @@ const projectId = session.projectId;
 
             if (allDone && !isCompleted) {
                 isCompleted = true; // 重複実行ブロック
-                await db.ref(`projects/${projectId}/scores/__completed__q${currentQ}/${scorerName}`).set(true);
+                await db.ref(`projects/${projectId}/protected/${secretHash}/scores/__completed__q${currentQ}/${scorerName}`).set(true);
 
-                const snap = await db.ref(`projects/${projectId}/scores`).get();
+                const snap = await db.ref(`projects/${projectId}/protected/${secretHash}/scores`).get();
                 await checkAutoConfirm(snap.val() || {}, currentQ);
                 
                 location.href = 'judge.html';
@@ -210,7 +236,7 @@ const projectId = session.projectId;
             }
 
             if (allAgree) {
-                await db.ref(`projects/${projectId}/scores/__final__q${q}`).set(finals);
+                await db.ref(`projects/${projectId}/protected/${secretHash}/scores/__final__q${q}`).set(finals);
             }
         }
 
@@ -226,7 +252,7 @@ const projectId = session.projectId;
             const name = masterData[entryNum]?.name || `受付番号 ${entryNum}`;
             overlay.innerHTML = `<div class="preview-header"><h2>${name} の解答用紙</h2><button class="preview-close" onclick="document.getElementById('preview-overlay').classList.remove('show')">✕ 閉じる</button></div><div id="preview-content" style="text-align:center"><div style="color:#aaa">読み込み中...</div></div>`;
             overlay.classList.add('show');
-            const snap = await db.ref(`projects/${projectId}/answers/${entryNum}/pageImage`).get();
+            const snap = await db.ref(`projects/${projectId}/protected/${secretHash}/answers/${entryNum}/pageImage`).get();
             const pc = document.getElementById('preview-content');
             if (snap.exists()) {
                 pc.innerHTML = `<img src="${snap.val()}" alt="${name}" style="max-width:100%;border-radius:8px;background:white;">`;

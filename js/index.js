@@ -1,189 +1,302 @@
-let selectedRole = 'scorer';
-      let currentTab = 'join';
+let currentTab = 'join';
 
-      function setTab(tab) {
-        currentTab = tab;
-        document.getElementById('tab-join').className = tab === 'join' ? 'tab active' : 'tab';
-        document.getElementById('tab-create').className = tab === 'create' ? 'tab active' : 'tab';
-        document.getElementById('tab-import').className = tab === 'import' ? 'tab active' : 'tab';
-        document.getElementById('section-join').style.display = tab === 'join' ? 'block' : 'none';
-        document.getElementById('section-create').style.display = tab === 'create' ? 'block' : 'none';
-        document.getElementById('section-import').style.display = tab === 'import' ? 'block' : 'none';
-      }
+function setTab(tab) {
+	currentTab = tab;
+	document.getElementById('tab-join').className = tab === 'join' ? 'tab active' : 'tab';
+	document.getElementById('tab-create').className = tab === 'create' ? 'tab active' : 'tab';
+	document.getElementById('section-join').style.display = tab === 'join' ? 'block' : 'none';
+	document.getElementById('section-create').style.display = tab === 'create' ? 'block' : 'none';
+	document.getElementById('section-import').style.display = tab === 'import' ? 'block' : 'none';
+}
 
-      function selectRole(role) {
-        selectedRole = role;
-        document.getElementById('btn-scorer-join').className = role === 'scorer' ? 'role-btn selected' : 'role-btn';
-        document.getElementById('btn-admin-join').className = role === 'admin' ? 'role-btn selected' : 'role-btn';
-      }
+function showError(msg) {
+	const el = document.getElementById('status-msg');
+	el.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + msg;
+	el.style.display = 'block';
+	setTimeout(() => el.style.display = 'none', 5000);
+}
 
-      function showError(msg) {
-        const el = document.getElementById('status-msg');
-        el.textContent = msg;
-        el.style.display = 'block';
-        setTimeout(() => el.style.display = 'none', 4000);
-      }
+function togglePassword(id, iconId) {
+	const input = document.getElementById(id);
+	const icon = document.getElementById(iconId);
+	if (input.type === "password") {
+		input.type = "text";
+		if (icon) { icon.classList.remove('fa-eye'); icon.classList.add('fa-eye-slash'); }
+	} else {
+		input.type = "password";
+		if (icon) { icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
+	}
+}
 
-      function togglePassword(id) {
-        const input = document.getElementById(id);
-        const icon = input.nextElementSibling.querySelector('i');
-        if (input.type === "password") {
-          input.type = "text";
-          if (icon) { icon.classList.remove('fa-eye'); icon.classList.add('fa-eye-slash'); }
-        } else {
-          input.type = "password";
-          if (icon) { icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
-        }
-      }
+async function copyToClipboard(id, btn) {
+	const input = document.getElementById(id);
+	try {
+		await navigator.clipboard.writeText(input.value);
+		const orig = btn.innerHTML;
+		btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+		setTimeout(() => btn.innerHTML = orig, 1500);
+	} catch (err) {
+		showError('コピーに失敗しました');
+	}
+}
 
-      async function copyToClipboard(id) {
-        const input = document.getElementById(id);
-        try {
-          await navigator.clipboard.writeText(input.value);
-          const btn = input.nextElementSibling;
-          const orig = btn.textContent;
-          btn.textContent = '完了';
-          setTimeout(() => btn.textContent = orig, 1500);
-        } catch (err) {
-          showError('コピーに失敗しました');
-        }
-      }
+function generateSecureId() {
+	return [1, 2, 3, 4].map(() => Math.random().toString(36).substring(2, 6).padStart(4, '0')).join('-');
+}
 
-      async function joinProject() {
-        const pid = document.getElementById('join-id').value.trim();
-        const pwd = document.getElementById('join-password').value;
-        const name = document.getElementById('join-name').value.trim();
+async function joinProject() {
+	const pid = document.getElementById('join-id').value.trim();
+	const pwd = document.getElementById('join-password').value;
+	const name = document.getElementById('join-name').value.trim();
+	const btn = document.getElementById('login-btn');
 
-        if (!pid || !pwd || !name) {
-          showError('全ての項目を入力してください');
-          return;
-        }
+	if (!pid || !pwd || !name) {
+		showError('全ての項目を入力してください');
+		return;
+	}
 
-        const snap = await db.ref('projects/' + pid + '/settings').get();
-        if (!snap.exists()) {
-          showError('指定されたプロジェクトIDが見つかりません');
-          return;
-        }
+	btn.disabled = true;
+	btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> 認証中...';
 
-        const settings = snap.val();
-        const pwdHash = await hashPassword(pwd);
-        // 旧平文パスワードとの後方互換性を維持
-        if (settings.passwordHash ? settings.passwordHash !== pwdHash : settings.password !== pwd) {
-          showError('パスワードが間違っています');
-          return;
-        }
+	try {
+		// まず公開設定が存在するか確認する
+		const snapPub = await db.ref(`projects/${pid}/publicSettings`).once('value');
+		if (!snapPub.exists()) {
+			// 旧バージョンとの互換性チェック
+			const snapOld = await db.ref(`projects/${pid}/settings`).once('value');
+			if (snapOld.exists()) {
+				// 旧システムのログイン
+				const settings = snapOld.val();
+				const pwdHash = await AppCrypto.hashPassword(pwd);
+				if (settings.passwordHash ? settings.passwordHash !== pwdHash : settings.password !== pwd) {
+					throw new Error('パスワードが間違っています。');
+				}
+				session.set('projectId', pid);
+				session.set('scorer_name', name);
+				session.set('scorer_role', 'admin');
+				location.href = 'admin.html';
+				return;
+			}
+			throw new Error('指定されたプロジェクトIDが見つかりません');
+		}
 
-        // ログイン成功
-        session.set('projectId', pid);
-        session.set('scorer_name', name);
-        session.set('scorer_role', selectedRole);
-        location.href = selectedRole === 'admin' ? 'judge.html' : 'judge.html';
-      }
+		// 新バージョンのログイン判定 (入力されたパスワードのハッシュで探る)
+		const hash = await AppCrypto.hashPassword(pwd);
 
-      async function createProject() {
-        const pName = document.getElementById('create-project-name').value.trim();
-        const pwd = document.getElementById('create-password').value;
-        const name = document.getElementById('create-name').value.trim();
+		// Admin判定
+		const snapAdmin = await db.ref(`projects/${pid}/protected/${hash}/settings`).once('value');
+		if (snapAdmin.exists()) {
+			const adminConfig = snapAdmin.val();
+			session.set('projectId', pid);
+			session.set('scorer_name', name);
+			session.set('scorer_role', 'admin');
+			session.set('secretHash', adminConfig.scorerHash); // 採点者領域へのアクセス権
+			session.set('adminHash', hash); // 管理者領域へのアクセス権
 
-        if (!pName || !pwd || !name) {
-          showError('全ての項目を入力してください');
-          return;
-        }
+			// PII復号用に暗号化された秘密鍵を一時的に解読してセッションへ
+			try {
+				const privJwkStr = await AppCrypto.decryptAES(adminConfig.encryptedPrivateKey, pwd);
+				session.set('privateKeyJwk', privJwkStr);
+			} catch (e) {
+				console.error("Failed to decrypt private key");
+			}
+			location.href = 'admin.html';
+			return;
+		}
 
-        if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/.test(pwd)) {
-          showError('パスワードは英大文字、英小文字、数字をそれぞれ1つ以上含む8文字以上である必要があります');
-          return;
-        }
+		// Scorer判定
+		const snapScorer = await db.ref(`projects/${pid}/protected/${hash}/settings`).once('value');
+		if (snapScorer.exists()) {
+			session.set('projectId', pid);
+			session.set('scorer_name', name);
+			session.set('scorer_role', 'scorer');
+			session.set('secretHash', hash); // 採点者領域へのアクセス権のみ
+			location.href = 'judge.html';
+			return;
+		}
 
-        // ランダムなIDを生成
-        const pid = Math.random().toString(36).substring(2, 10).toLowerCase();
+		throw new Error('アクセスコード または パスワードが間違っています');
 
-        const pwdHash = await hashPassword(pwd);
-        await db.ref('projects/' + pid + '/settings').set({
-          projectName: pName,
-          passwordHash: pwdHash,
-          createdAt: firebase.database.ServerValue.TIMESTAMP,
-          adminCreator: name
-        });
+	} catch (e) {
+		showError(e.message);
+		btn.disabled = false;
+		btn.innerHTML = '部屋へ入る <i class="fa-solid fa-arrow-right-to-bracket"></i>';
+	}
+}
 
-        session.set('projectId', pid);
-        session.set('scorer_name', name);
-        session.set('scorer_role', 'admin');
+async function createProject() {
+	const pName = document.getElementById('create-project-name').value.trim();
+	const adminPwd = document.getElementById('create-admin-password').value;
+	const scorerPwd = document.getElementById('create-scorer-password').value;
+	const name = document.getElementById('create-name').value.trim();
+	const btn = document.getElementById('create-btn');
 
-        // タブを消して成功画面を表示
-        document.querySelector('.tabs').style.display = 'none';
-        document.getElementById('section-create').style.display = 'none';
-        document.getElementById('section-success').style.display = 'block';
-        document.getElementById('success-id').value = pid;
-        document.getElementById('success-pwd').value = pwd;
-      }
+	if (!pName || !adminPwd || !scorerPwd || !name) {
+		showError('全ての項目を入力してください');
+		return;
+	}
 
-      async function importProject() {
-        const file = document.getElementById('import-file').files[0];
-        const pName = document.getElementById('import-project-name').value.trim();
-        const pwd = document.getElementById('import-password').value;
-        const name = document.getElementById('import-name').value.trim();
-        const btn = document.getElementById('import-btn');
+	const pwdRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
+	if (!pwdRegex.test(adminPwd)) {
+		showError('管理者パスワードは英大文字、英小文字、数字をそれぞれ1つ以上含む8文字以上が必要です');
+		return;
+	}
+	if (adminPwd === scorerPwd) {
+		showError('管理者パスワードと採点者コードは必ず違うものにしてください');
+		return;
+	}
 
-        if (!file || !pName || !pwd || !name) {
-          showError('全ての項目を入力・選択してください');
-          return;
-        }
+	btn.disabled = true;
+	btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> 作成中...';
 
-        if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/.test(pwd)) {
-          showError('パスワードは英大文字、英小文字、数字をそれぞれ1つ以上含む8文字以上である必要があります');
-          return;
-        }
+	try {
+		const pid = generateSecureId();
 
-        try {
-            btn.disabled = true;
-            btn.textContent = '復元中...';
-            
-            const text = await file.text();
-            const data = JSON.parse(text);
-            
-            const pid = Math.random().toString(36).substring(2, 10).toLowerCase();
-            const pwdHash = await hashPassword(pwd);
+		// ハッシュ計算
+		const adminHash = await AppCrypto.hashPassword(adminPwd);
+		const scorerHash = await AppCrypto.hashPassword(scorerPwd);
 
-            if (!data.settings) data.settings = {};
-            data.settings.projectName = pName;
-            data.settings.passwordHash = pwdHash;
-            data.settings.password = null; // Clear any old plain text password
-            data.settings.createdAt = firebase.database.ServerValue.TIMESTAMP;
-            data.settings.adminCreator = name;
+		// RSAキーペアの生成 (PIIのE2E暗号化用)
+		const { publicKeyJwk, privateKeyJwk } = await AppCrypto.generateRSAKeyPair();
 
-            await db.ref('projects/' + pid).set(data);
+		// 秘密鍵を管理者パスワードでAES暗号化
+		const encryptedPriv = await AppCrypto.encryptAES(JSON.stringify(privateKeyJwk), adminPwd);
 
-            session.set('projectId', pid);
-            session.set('scorer_name', name);
-            session.set('scorer_role', 'admin');
+		// DB保存
+		const newData = {
+			publicSettings: {
+				projectName: pName,
+				publicKey: publicKeyJwk
+			},
+			entries: {}, // エントリー書き込みは公開領域
+			protected: {
+				[scorerHash]: {
+					settings: { role: 'scorer', createdAt: firebase.database.ServerValue.TIMESTAMP }
+				},
+				[adminHash]: {
+					settings: {
+						adminCreator: name,
+						scorerHash: scorerHash,
+						encryptedPrivateKey: encryptedPriv
+					}
+				}
+			}
+		};
 
-            document.querySelector('.tabs').style.display = 'none';
-            document.getElementById('section-import').style.display = 'none';
-            document.getElementById('section-success').style.display = 'block';
-            document.getElementById('success-id').value = pid;
-            document.getElementById('success-pwd').value = pwd;
+		await db.ref(`projects/${pid}`).set(newData);
 
-        } catch (e) {
-            showError('インポートに失敗しました: ' + e.message);
-            btn.disabled = false;
-            btn.textContent = 'バックアップを復元して新設';
-        }
-      }
+		// セッションセットアップ
+		session.set('projectId', pid);
+		session.set('scorer_name', name);
+		session.set('scorer_role', 'admin');
+		session.set('secretHash', scorerHash);
+		session.set('adminHash', adminHash);
+		session.set('privateKeyJwk', JSON.stringify(privateKeyJwk));
 
-      // エンターキー対応（IME変換確定のEnterを確実に無視）
-      let composing = false;
-      document.addEventListener('compositionstart', () => { composing = true; });
-      document.addEventListener('compositionend', () => {
-        // compositionend後もEnterのkeyupが来るので、少し遅らせてフラグを解除
-        setTimeout(() => { composing = false; }, 500);
-      });
-      document.addEventListener('keyup', (e) => {
-        if (e.key === 'Enter' && !composing) {
-          if (currentTab === 'join') {
-            joinProject();
-          } else {
-            createProject();
-          }
-        }
-      });
+		// UIDisplay
+		document.getElementById('tabs-container').style.display = 'none';
+		document.getElementById('section-create').style.display = 'none';
+		document.getElementById('section-success').style.display = 'block';
+		document.getElementById('success-id').value = pid;
+		document.getElementById('success-pwd').value = scorerPwd;
+
+	} catch (e) {
+		showError('作成に失敗しました: ' + e.message);
+		btn.disabled = false;
+		btn.innerHTML = '新しいプロジェクトを作成 <i class="fa-solid fa-plus"></i>';
+	}
+}
+
+async function importProject() {
+	const file = document.getElementById('import-file').files[0];
+	const pName = document.getElementById('import-project-name').value.trim();
+	const adminPwd = document.getElementById('import-admin-password').value;
+	const scorerPwd = document.getElementById('import-scorer-password').value;
+	const name = document.getElementById('import-name').value.trim();
+	const btn = document.getElementById('import-btn');
+
+	if (!file || !pName || !adminPwd || !scorerPwd || !name) {
+		showError('全ての項目を入力・選択してください');
+		return;
+	}
+
+	const pwdRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
+	if (!pwdRegex.test(adminPwd)) {
+		showError('管理者パスワードは英大文字、英小文字、数字をそれぞれ1つ以上含む8文字以上が必要です');
+		return;
+	}
+
+	btn.disabled = true;
+	btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> 復元中...';
+
+	try {
+		const text = await file.text();
+		const data = JSON.parse(text);
+
+		const pid = generateSecureId();
+		const adminHash = await AppCrypto.hashPassword(adminPwd);
+		const scorerHash = await AppCrypto.hashPassword(scorerPwd);
+
+		const { publicKeyJwk, privateKeyJwk } = await AppCrypto.generateRSAKeyPair();
+		const encryptedPriv = await AppCrypto.encryptAES(JSON.stringify(privateKeyJwk), adminPwd);
+
+		const newData = {
+			publicSettings: { projectName: pName, publicKey: publicKeyJwk },
+			entries: data.entries || {},
+			protected: {
+				[scorerHash]: {
+					answers: data.answers || {},
+					answers_text: data.answers_text || {},
+					scores: data.scores || {},
+					config: data.config || {},
+					entryConfig: data.entryConfig || {},
+					disclosure: data.disclosure || {},
+					settings: { role: 'scorer', createdAt: firebase.database.ServerValue.TIMESTAMP }
+				},
+				[adminHash]: {
+					settings: {
+						adminCreator: name,
+						scorerHash: scorerHash,
+						encryptedPrivateKey: encryptedPriv
+					}
+				}
+			}
+		};
+
+		await db.ref(`projects/${pid}`).set(newData);
+
+		session.set('projectId', pid);
+		session.set('scorer_name', name);
+		session.set('scorer_role', 'admin');
+		session.set('secretHash', scorerHash);
+		session.set('adminHash', adminHash);
+		session.set('privateKeyJwk', JSON.stringify(privateKeyJwk));
+
+		document.getElementById('tabs-container').style.display = 'none';
+		document.getElementById('section-import').style.display = 'none';
+		document.getElementById('section-success').style.display = 'block';
+		document.getElementById('success-id').value = pid;
+		document.getElementById('success-pwd').value = scorerPwd;
+
+	} catch (e) {
+		showError('インポートに失敗しました: ' + e.message);
+		btn.disabled = false;
+		btn.innerHTML = '復元して新設 <i class="fa-solid fa-upload"></i>';
+	}
+}
+
+// エンターキー対応
+let composing = false;
+document.addEventListener('compositionstart', () => { composing = true; });
+document.addEventListener('compositionend', () => {
+	setTimeout(() => { composing = false; }, 500);
+});
+document.addEventListener('keyup', (e) => {
+	if (e.key === 'Enter' && !composing) {
+		if (currentTab === 'join') {
+			joinProject();
+		} else if (currentTab === 'create') {
+			createProject();
+		}
+	}
+});

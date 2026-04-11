@@ -8,6 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="js/config.js"></script>
+  <script src="js/crypto.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -217,11 +218,17 @@
         <div class="loading">読み込み中...</div>
     </div>
 
-    <div class="shortcut-bar">
+        <div class="shortcut-bar">
         <span><kbd>M</kbd> 正解</span>
         <span><kbd>X</kbd> 不正解</span>
         <span><kbd>H</kbd> 保留</span>
         <span><kbd>←→↑↓</kbd> 移動</span>
+    </div>
+
+    <div class="mobile-action-bar" id="mobile-action-bar">
+        <button class="btn" style="background:#1b5e20;color:white;" onclick="scoreSelected('correct')"><i class="fa-solid fa-check"></i><span>正解</span></button>
+        <button class="btn" style="background:#c62828;color:white;" onclick="scoreSelected('wrong')"><i class="fa-solid fa-xmark"></i><span>不正解</span></button>
+        <button class="btn" style="background:#f57c00;color:white;" onclick="scoreSelected('hold')"><i class="fa-solid fa-triangle-exclamation"></i><span>保留</span></button>
     </div>
 
     <script src="js/question.js"></script>

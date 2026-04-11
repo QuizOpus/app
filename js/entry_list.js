@@ -17,7 +17,7 @@ const params = new URLSearchParams(location.search);
         });
 
         // 公開設定監視
-        db.ref(`projects/${projectId}/entryConfig/listEnabled`).on('value', snap => {
+        db.ref(`projects/${projectId}/protected/${secretHash}/entryConfig/listEnabled`).on('value', snap => {
             const isEnabled = snap.exists() && snap.val() === true;
             if (isEnabled) {
                 document.getElementById('disabled-msg').style.display = 'none';

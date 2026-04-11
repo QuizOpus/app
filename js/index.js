@@ -14,9 +14,7 @@ function generateStrongPassword() {
 	return pwd.split('').sort(() => 0.5 - Math.random()).join('');
 }
 
-function autoGenPwd(id) {
-	document.getElementById(id).value = generateStrongPassword();
-}
+
 
 let currentTab = 'join';
 
@@ -25,13 +23,7 @@ function setTab(tab) {
 	document.getElementById('tab-join').className = tab === 'join' ? 'tab active' : 'tab';
 	document.getElementById('tab-create').className = tab === 'create' ? 'tab active' : 'tab';
 	
-	if (tab === 'create') {
-		if (!document.getElementById('create-admin-password').value) autoGenPwd('create-admin-password');
-		if (!document.getElementById('create-scorer-password').value) autoGenPwd('create-scorer-password');
-	} else if (tab === 'import') {
-		if (!document.getElementById('import-admin-password').value) autoGenPwd('import-admin-password');
-		if (!document.getElementById('import-scorer-password').value) autoGenPwd('import-scorer-password');
-	}
+	
 
 	document.getElementById('section-join').style.display = tab === 'join' ? 'block' : 'none';
 	document.getElementById('section-create').style.display = tab === 'create' ? 'block' : 'none';
@@ -155,23 +147,13 @@ async function joinProject() {
 
 async function createProject() {
 	const pName = document.getElementById('create-project-name').value.trim();
-	const adminPwd = document.getElementById('create-admin-password').value;
-	const scorerPwd = document.getElementById('create-scorer-password').value;
+	const adminPwd = generateStrongPassword();
+	const scorerPwd = generateStrongPassword();
 	const name = document.getElementById('create-name').value.trim();
 	const btn = document.getElementById('create-btn');
 
-	if (!pName || !adminPwd || !scorerPwd || !name) {
+	if (!pName || !name) {
 		showError('全ての項目を入力してください');
-		return;
-	}
-
-	const pwdRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-	if (!pwdRegex.test(adminPwd)) {
-		showError('管理者パスワードは英大文字、英小文字、数字をそれぞれ1つ以上含む8文字以上が必要です');
-		return;
-	}
-	if (adminPwd === scorerPwd) {
-		showError('管理者パスワードと採点者コードは必ず違うものにしてください');
 		return;
 	}
 
@@ -227,6 +209,7 @@ async function createProject() {
 		document.getElementById('section-create').style.display = 'none';
 		document.getElementById('section-success').style.display = 'block';
 		document.getElementById('success-id').value = pid;
+		document.getElementById('success-admin-pwd').value = adminPwd;
 		document.getElementById('success-pwd').value = scorerPwd;
 
 	} catch (e) {
@@ -239,19 +222,13 @@ async function createProject() {
 async function importProject() {
 	const file = document.getElementById('import-file').files[0];
 	const pName = document.getElementById('import-project-name').value.trim();
-	const adminPwd = document.getElementById('import-admin-password').value;
-	const scorerPwd = document.getElementById('import-scorer-password').value;
+	const adminPwd = generateStrongPassword();
+	const scorerPwd = generateStrongPassword();
 	const name = document.getElementById('import-name').value.trim();
 	const btn = document.getElementById('import-btn');
 
-	if (!file || !pName || !adminPwd || !scorerPwd || !name) {
+	if (!file || !pName || !name) {
 		showError('全ての項目を入力・選択してください');
-		return;
-	}
-
-	const pwdRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-	if (!pwdRegex.test(adminPwd)) {
-		showError('管理者パスワードは英大文字、英小文字、数字をそれぞれ1つ以上含む8文字以上が必要です');
 		return;
 	}
 
@@ -305,6 +282,7 @@ async function importProject() {
 		document.getElementById('section-import').style.display = 'none';
 		document.getElementById('section-success').style.display = 'block';
 		document.getElementById('success-id').value = pid;
+		document.getElementById('success-admin-pwd').value = adminPwd;
 		document.getElementById('success-pwd').value = scorerPwd;
 
 	} catch (e) {

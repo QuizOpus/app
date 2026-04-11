@@ -176,30 +176,11 @@
         text-align: center;
     }
   
-    .btn-micro {
-      background: transparent;
-      border: 1px solid rgba(255,255,255,0.2);
-      color: #94a3b8;
-      border-radius: 6px;
-      padding: 4px 8px;
-      font-size: 11px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      transition: all 0.2s;
-    }
-    .btn-micro:hover {
+        .btn-micro:hover {
       background: rgba(255,255,255,0.1);
       color: white;
     }
-    .label-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-    .label-row label {
+        .label-row label {
       margin-bottom: 0;
     }
 </style>
@@ -241,23 +222,9 @@
       <label>プロジェクト名（大会名など）</label>
       <input type="text" id="create-project-name" placeholder="例：QuizOpus 2026" />
       
-      <div class="label-row">
-        <label><i class="fa-solid fa-crown" style="color: #fbbf24;"></i> 管理者用 マスターパスワード</label>
-        <button class="btn-micro" onclick="autoGenPwd('create-admin-password')"><i class="fa-solid fa-rotate-right"></i> 再生成</button>
-      </div>
-      <div style="position: relative; margin-bottom: 16px;">
-        <input type="text" id="create-admin-password" placeholder="全設定と個人情報を管理する強固な文字列" style="margin-bottom: 0; border-color: rgba(251, 191, 36, 0.4);" />
-        <span style="position: absolute; right: 16px; top: 16px; cursor: pointer; color: #94a3b8;" onclick="togglePassword('create-admin-password', 'toggle-icon-create1')"><i class="fas fa-eye-slash" id="toggle-icon-create1"></i></span>
-      </div>
+      
 
-      <div class="label-row">
-        <label><i class="fa-solid fa-users" style="color: #60a5fa;"></i> 採点者用 アクセスコード</label>
-        <button class="btn-micro" onclick="autoGenPwd('create-scorer-password')"><i class="fa-solid fa-rotate-right"></i> 再生成</button>
-      </div>
-      <div style="position: relative; margin-bottom: 16px;">
-        <input type="text" id="create-scorer-password" placeholder="採点スタッフに教える合言葉" style="margin-bottom: 0; border-color: rgba(96, 165, 250, 0.4);" />
-        <span style="position: absolute; right: 16px; top: 16px; cursor: pointer; color: #94a3b8;" onclick="togglePassword('create-scorer-password', 'toggle-icon-create2')"><i class="fas fa-eye-slash" id="toggle-icon-create2"></i></span>
-      </div>
+      
 
       <label>あなたのお名前（最初のシステム作成者）</label>
       <input type="text" id="create-name" placeholder="例：山田太郎" />
@@ -277,9 +244,14 @@
     <div id="section-success" style="display: none; text-align: center;">
       <div style="font-size: 56px; margin-bottom: 16px; color: #4ade80;"><i class="fa-solid fa-circle-check"></i></div>
       <h3 style="margin-bottom: 8px;">作成完了！</h3>
-      <p style="margin-bottom: 24px; font-size: 14px; color: #94a3b8;">以下の情報を採点用スタッフにのみ共有してください。<br>（マスターパスワードは共有しないでください）</p>
+      <p style="margin-bottom: 24px; font-size: 14px; color: #94a3b8;">以下の情報をコピーして安全な場所に保存してください。<br>（マスターパスワードは絶対に他人へ共有しないでください）</p>
       
       <div style="background: rgba(15, 23, 42, 0.8); padding: 16px; border-radius: 12px; margin-bottom: 24px; text-align: left; border: 1px solid rgba(255,255,255,0.1);">
+        <label><i class="fa-solid fa-crown" style="color: #fbbf24;"></i> 管理者用 マスターパスワード (コピーして大切に保管)</label>
+        <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: nowrap;">
+          <input type="text" id="success-admin-pwd" readonly style="margin-bottom: 0; min-width: 0; border-color: rgba(251, 191, 36, 0.4);" />
+          <button class="btn" style="width: auto; padding: 0 16px; font-size: 14px; flex-shrink: 0; background: #f59e0b;" onclick="copyToClipboard('success-admin-pwd', this)">コピー</button>
+        </div>
         <label>参加ID (URLの一部になります)</label>
         <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: nowrap;">
           <input type="text" id="success-id" readonly style="margin-bottom: 0; min-width: 0;" />
@@ -307,23 +279,9 @@
       <label>新しいプロジェクト名</label>
       <input type="text" id="import-project-name" placeholder="例：QuizOpus 2026 (復旧版)" />
       
-      <div class="label-row">
-        <label><i class="fa-solid fa-crown" style="color: #fbbf24;"></i> 新管理者 パスワード</label>
-        <button class="btn-micro" onclick="autoGenPwd('import-admin-password')"><i class="fa-solid fa-rotate-right"></i> 再生成</button>
-      </div>
-      <div style="position: relative; margin-bottom: 16px;">
-        <input type="text" id="import-admin-password" placeholder="全設定を管理する文字列" style="margin-bottom: 0;" />
-        <span style="position: absolute; right: 16px; top: 16px; cursor: pointer; color: #94a3b8;" onclick="togglePassword('import-admin-password', 'toggle-icon-import1')"><i class="fas fa-eye-slash" id="toggle-icon-import1"></i></span>
-      </div>
+      
 
-      <div class="label-row">
-        <label><i class="fa-solid fa-users" style="color: #60a5fa;"></i> 新採点者 アクセスコード</label>
-        <button class="btn-micro" onclick="autoGenPwd('import-scorer-password')"><i class="fa-solid fa-rotate-right"></i> 再生成</button>
-      </div>
-      <div style="position: relative; margin-bottom: 16px;">
-        <input type="text" id="import-scorer-password" placeholder="スタッフに教える合言葉" style="margin-bottom: 0;" />
-        <span style="position: absolute; right: 16px; top: 16px; cursor: pointer; color: #94a3b8;" onclick="togglePassword('import-scorer-password', 'toggle-icon-import2')"><i class="fas fa-eye-slash" id="toggle-icon-import2"></i></span>
-      </div>
+      
       
       <label>あなたのお名前（管理者）</label>
       <input type="text" id="import-name" placeholder="例：山田太郎" />

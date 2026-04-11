@@ -42,7 +42,8 @@
             border-radius: var(--radius-md); padding: 14px; text-align: center;
             border: 1px solid rgba(255,255,255,0.05);
             cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: var(--shadow-sm); display: flex; flex-direction: column; height: 100%;
+            box-shadow: var(--shadow-sm); display: flex; flex-direction: column;
+            min-height: 120px; overflow: hidden;
         }
         .q-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); background: rgba(30,41,59,0.8); }
         .q-card.mine { border-color: rgba(59,130,246,0.5); box-shadow: 0 0 15px rgba(59,130,246,0.15); }

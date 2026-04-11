@@ -13,7 +13,7 @@ function showDbAuthError() {
     div.innerHTML = `
         <div class="error-dialog">
             <h2><i class="fa-solid fa-triangle-exclamation"></i> データベース通信拒否</h2>
-            <p>Firebaseのセキュリティルールが原因でデータが読み込めません。<br>（PERMISSION_DENIEDエラー）<br><br>管理者に連絡し、最新のルールがFirebase Consoleに適用されているか確認してください。</p>
+            <p>データベースへの接続が拒否されました。<br><br><br>運営者にお問い合わせください。</p>
             <button class="btn danger" onclick="location.href='index.html'">ログイン画面へ戻る</button>
         </div>
     `;
@@ -36,7 +36,7 @@ function showDbAuthError() {
         const scorerRole = session.scorerRole;
         if (!projectId || scorerRole !== 'admin') { showAdminToast('管理者としてプロジェクトに入室してください'); setTimeout(() => location.href = 'index.html', 1500); }
 
-        document.getElementById('project-id-display').textContent = `ID: ${projectId}`;
+        document.getElementById('project-id-display').innerHTML = `<i class="fa-solid fa-copy"></i> ${projectId}`;
 
         let totalQuestions = 100;
         let scoresData = {};
@@ -190,7 +190,7 @@ function showDbAuthError() {
                 const config = await buildLayoutConfig(qCount);
                 await db.ref(`projects/${projectId}/protected/${secretHash}/config`).set(config);
                 totalQuestions = qCount;
-                showAdminToast("問題数とレイアウトをFirebaseに保存しました！", "success");
+                showAdminToast("問題数とレイアウトを保存しました！", "success");
             } catch (err) {
                 showAdminToast("保存エラー: " + err.message);
             }
@@ -201,6 +201,8 @@ function showDbAuthError() {
                 const qCount = parseInt(document.getElementById('question-count').value);
                 const qCols = 5;
                 if (qCount < 10 || qCount % 10 !== 0) { showAdminToast("問題数は10の倍数で指定してください"); return; }
+                // 自動的に問題数も保存
+                await saveQuestionCount();
                 window.jsPDF = window.jspdf.jsPDF;
                 const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
                 const pageWidth = 210, pageHeight = 297;
@@ -492,7 +494,7 @@ function showDbAuthError() {
             const data = {};
             modelAnswers.forEach((ans, idx) => { if (ans) data[idx + 1] = ans; });
             await db.ref(`projects/${projectId}/protected/${secretHash}/answers_text`).set(data);
-            document.getElementById('model-status').textContent = 'Firebaseに保存しました'; document.getElementById('model-status').style.display = 'block';
+            document.getElementById('model-status').textContent = '保存しました'; document.getElementById('model-status').style.display = 'block';
             setTimeout(() => document.getElementById('model-status').style.display = 'none', 3000);
         }
 
@@ -746,7 +748,7 @@ function showDbAuthError() {
                 await db.ref().update(updates);
 
                 const msg = document.getElementById('disclosure-status');
-                msg.textContent = '開示データを生成しFirebaseに保存しました！';
+                msg.textContent = '開示データを生成し保存しました！';
                 msg.style.display = 'block';
                 setTimeout(() => msg.style.display = 'none', 3500);
 

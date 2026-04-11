@@ -13,7 +13,7 @@ function showDbAuthError() {
     div.innerHTML = `
         <div class="error-dialog">
             <h2><i class="fa-solid fa-triangle-exclamation"></i> データベース通信拒否</h2>
-            <p>Firebaseのセキュリティルールが原因でデータが読み込めません。<br>（PERMISSION_DENIEDエラー）<br><br>管理者に連絡し、最新のルールがFirebase Consoleに適用されているか確認してください。</p>
+            <p>データベースへの接続が拒否されました。<br><br><br>運営者にお問い合わせください。</p>
             <button class="btn danger" onclick="location.href='index.html'">ログイン画面へ戻る</button>
         </div>
     `;

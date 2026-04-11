@@ -89,7 +89,7 @@ a:hover { text-decoration: underline; }
 .btn.success:hover { box-shadow: 0 0 12px rgba(16, 185, 129, 0.4); }
 
 /* Inputs */
-input[type="text"], input[type="password"], input[type="number"], select {
+input[type="text"], input[type="password"], input[type="number"], input[type="email"], select {
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid var(--glass-border);
   color: var(--text-main);
@@ -249,3 +249,77 @@ i.icon-text { margin-right: 6px; }
   text-align: center;
   padding: 24px;
 }
+
+/* Toggle Switch */
+.toggle-switch {
+  position: relative; display: inline-block; width: 48px; height: 26px; flex-shrink: 0;
+}
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; cursor: pointer; inset: 0;
+  background: rgba(255,255,255,0.1); border-radius: 26px;
+  border: 1px solid var(--glass-border); transition: all 0.3s;
+}
+.toggle-slider::before {
+  content: ""; position: absolute; height: 20px; width: 20px;
+  left: 2px; bottom: 2px; background: #94a3b8;
+  border-radius: 50%; transition: all 0.3s;
+}
+.toggle-switch input:checked + .toggle-slider { background: rgba(59,130,246,0.3); border-color: var(--primary); }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); background: var(--primary); }
+.toggle-row {
+  display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--text-main);
+}
+
+/* Progress Bar */
+.progress-bar-wrap {
+  background: rgba(15,23,42,0.6); border-radius: var(--radius-sm);
+  overflow: hidden; height: 6px; margin: 12px 0;
+  border: 1px solid var(--glass-border);
+}
+.progress-bar-inner {
+  height: 100%; background: linear-gradient(90deg, var(--primary), #60a5fa);
+  width: 0%; transition: width 0.3s; border-radius: var(--radius-sm);
+}
+
+/* Select (custom arrow) */
+select {
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+/* File Upload Zone */
+.file-upload-zone {
+  border: 2px dashed var(--glass-border); border-radius: var(--radius-md);
+  padding: 24px; text-align: center; cursor: pointer;
+  transition: all 0.2s; background: rgba(15,23,42,0.4);
+}
+.file-upload-zone:hover { border-color: var(--primary); background: rgba(59,130,246,0.05); }
+.file-upload-zone.active { border-color: var(--primary); background: rgba(59,130,246,0.1); }
+.file-upload-zone i { font-size: 28px; color: var(--text-muted); margin-bottom: 8px; display: block; }
+.file-upload-zone .file-label { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+.file-upload-zone .file-name { font-size: 12px; color: var(--primary); margin-top: 8px; font-weight: 600; display: none; }
+.file-upload-zone input[type="file"] { display: none; }
+
+/* ID Copy Badge */
+.id-copy-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px; border-radius: var(--radius-md);
+  background: rgba(15,23,42,0.6); border: 1px solid var(--glass-border);
+  font-family: 'Courier New', monospace; font-size: 13px; font-weight: 600;
+  color: var(--text-muted); cursor: pointer; transition: all 0.2s;
+  margin-left: auto; white-space: nowrap;
+}
+.id-copy-badge:hover { border-color: var(--primary); color: var(--text-main); }
+.id-copy-badge i { color: var(--primary); }
+
+/* Status message */
+.status-msg { display: none; padding: 12px; border-radius: var(--radius-md); font-size: 13px; text-align: center; margin-top: 12px; }
+
+/* CSV status */
+.csv-status { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
+.csv-status.ready { color: #34d399; }
+.csv-status.notready { color: #f87171; }

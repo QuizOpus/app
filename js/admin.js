@@ -467,14 +467,14 @@ function showDbAuthError() {
         function renderModelGrid() {
             const grid = document.getElementById('model-answer-grid'); grid.innerHTML = '';
             modelAnswers.forEach((ans, i) => {
-                const item = document.createElement('div'); item.className = 'answer-grid-item';
-                item.innerHTML = `<div class="q-num">${i + 1}問</div><div class="answer-text ${ans ? '' : 'unset'}">${ans || '未設定'}</div>`;
+                const item = document.createElement('div'); item.className = 'model-cell';
+                item.innerHTML = `<div class="q-label"><i class="fa-solid fa-hashtag"></i>${i + 1}</div><div class="q-answer" style="${ans ? '' : 'color:var(--text-muted);font-style:italic'}">${ans || '—'}</div>`;
                 grid.appendChild(item);
             });
         }
         function loadCSV() {
             const file = document.getElementById('csv-file').files[0];
-            if (!file) { showAdminToast('CSVファイルを選択してください'); return; }
+            if (!file) return;
             const reader = new FileReader();
             reader.onload = e => {
                 const lines = e.target.result.split('\n').filter(l => l.trim());
@@ -710,11 +710,12 @@ function showDbAuthError() {
             const enabled = document.getElementById('disclosure-toggle').checked;
             await db.ref(`projects/${projectId}/protected/${secretHash}/entryConfig/disclosureEnabled`).set(enabled);
             document.getElementById('disclosure-url').style.display = enabled ? 'block' : 'none';
+            if (enabled) {
+                await generateDisclosure();
+            }
         }
 
         async function generateDisclosure() {
-            const btn = document.getElementById('gen-disclosure-btn');
-            btn.disabled = true; btn.textContent = '生成中...';
             try {
                 const updates = {};
                 // すべてのentryNumbersについてスコアを計算
@@ -733,7 +734,7 @@ function showDbAuthError() {
                             if (ho > 0 || (co > 0 && wr > 0)) {  }
                             else if (co >= 2) r = 'correct';
                             else if (wr >= 2) r = 'wrong';
-                            else if (co === 1) r = 'correct'; // fallback if only 1 scorer
+                            else if (co === 1) r = 'correct';
                             else if (wr === 1) r = 'wrong';
                         }
                         results[`q${q}`] = r;
@@ -748,14 +749,13 @@ function showDbAuthError() {
                 await db.ref().update(updates);
 
                 const msg = document.getElementById('disclosure-status');
-                msg.textContent = '開示データを生成し保存しました！';
+                msg.textContent = '開示データを自動生成しました';
                 msg.style.display = 'block';
                 setTimeout(() => msg.style.display = 'none', 3500);
 
             } catch (e) {
                 showAdminToast('生成に失敗: ' + e.message);
             }
-            btn.disabled = false; btn.textContent = '開示データを生成';
         }
 
         async function exportProjectData() {

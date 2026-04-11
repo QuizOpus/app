@@ -56,10 +56,13 @@
         .link-row a { color: var(--primary); word-break: break-all; }
         .link-row .link-label { color: var(--text-muted); white-space: nowrap; min-width: 120px; font-weight: 600; }
 
-        .model-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-top: 16px; }
-        .model-cell { background: rgba(15,23,42,0.6); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding: 8px; text-align: center; font-size: 12px; }
-        .model-cell .q-label { color: var(--text-muted); font-size: 10px; font-weight: 700; margin-bottom: 4px; }
-        .model-cell .q-answer { color: var(--text-main); font-weight: 600; }
+        .model-grid { grid-template-columns: repeat(2, 1fr); }
+        @media (min-width: 600px) { .model-grid { grid-template-columns: repeat(5, 1fr); } }
+        @media (min-width: 1024px) { .model-grid { grid-template-columns: repeat(8, 1fr); } }
+        @media (min-width: 1280px) { .model-grid { grid-template-columns: repeat(10, 1fr); } }
+        .model-cell { background: rgba(15,23,42,0.6); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding: 10px 8px; text-align: center; }
+        .model-cell .q-label { color: var(--text-muted); font-size: 10px; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.05em; }
+        .model-cell .q-answer { color: var(--text-main); font-weight: 700; font-size: 14px; word-break: break-all; line-height: 1.3; }
     </style>
 </head>
 
@@ -91,10 +94,10 @@
                     <label class="toggle-switch"><input type="checkbox" id="entry-list-toggle" onchange="toggleEntryList()"><span class="toggle-slider"></span></label>
                     <span>名簿の一般公開</span>
                 </div>
-                <div style="background:rgba(15,23,42,0.5);padding:12px 16px;border-radius:var(--radius-md);border:1px solid var(--glass-border);">
-                    <div class="link-row"><span class="link-label"><i class="fa-solid fa-pen-to-square"></i> エントリー</span><a id="registration-link" href="#" target="_blank"></a> <button class="btn secondary" style="padding:4px 10px;font-size:11px" onclick="copyUrl('registration-link', this)"><i class="fa-solid fa-copy"></i></button></div>
-                    <div class="link-row"><span class="link-label"><i class="fa-solid fa-list"></i> 名簿</span><a id="entry-link" href="#" target="_blank"></a> <button class="btn secondary" style="padding:4px 10px;font-size:11px" onclick="copyUrl('entry-link', this)"><i class="fa-solid fa-copy"></i></button></div>
-                    <div class="link-row"><span class="link-label"><i class="fa-solid fa-user-xmark"></i> キャンセル</span><a id="cancel-link" href="#" target="_blank"></a> <button class="btn secondary" style="padding:4px 10px;font-size:11px" onclick="copyUrl('cancel-link', this)"><i class="fa-solid fa-copy"></i></button></div>
+                <div style="background:rgba(15,23,42,0.5);padding:12px 16px;border-radius:var(--radius-md);border:1px solid var(--glass-border);display:flex;flex-direction:column;gap:10px">
+                    <div class="link-row"><span class="link-label"><i class="fa-solid fa-pen-to-square"></i> エントリー</span><a id="registration-link" href="#" target="_blank" style="display:none"></a><button class="btn secondary" style="padding:6px 12px;font-size:12px" onclick="window.open(document.getElementById('registration-link').href)"><i class="fa-solid fa-arrow-up-right-from-square"></i></button><button class="btn secondary" style="padding:6px 12px;font-size:12px" onclick="copyUrl('registration-link', this)"><i class="fa-solid fa-copy"></i></button></div>
+                    <div class="link-row"><span class="link-label"><i class="fa-solid fa-list"></i> 名簿</span><a id="entry-link" href="#" target="_blank" style="display:none"></a><button class="btn secondary" style="padding:6px 12px;font-size:12px" onclick="window.open(document.getElementById('entry-link').href)"><i class="fa-solid fa-arrow-up-right-from-square"></i></button><button class="btn secondary" style="padding:6px 12px;font-size:12px" onclick="copyUrl('entry-link', this)"><i class="fa-solid fa-copy"></i></button></div>
+                    <div class="link-row"><span class="link-label"><i class="fa-solid fa-user-xmark"></i> キャンセル</span><a id="cancel-link" href="#" target="_blank" style="display:none"></a><button class="btn secondary" style="padding:6px 12px;font-size:12px" onclick="window.open(document.getElementById('cancel-link').href)"><i class="fa-solid fa-arrow-up-right-from-square"></i></button><button class="btn secondary" style="padding:6px 12px;font-size:12px" onclick="copyUrl('cancel-link', this)"><i class="fa-solid fa-copy"></i></button></div>
                 </div>
                 <button class="btn secondary" style="margin-top:16px" onclick="exportEntriesCSV()"><i class="fa-solid fa-file-csv"></i> CSV エクスポート</button>
             </div>
@@ -188,16 +191,15 @@
                             <i class="fa-solid fa-file-csv"></i>
                             <div class="file-label">CSVファイルを選択</div>
                             <div class="file-name" id="csv-file-name"></div>
-                            <input type="file" id="csv-file" accept=".csv" onchange="document.getElementById('csv-file-name').textContent=this.files[0]?.name||'';document.getElementById('csv-file-name').style.display=this.files[0]?'block':'none'" />
+                            <input type="file" id="csv-file" accept=".csv" onchange="document.getElementById('csv-file-name').textContent=this.files[0]?.name||'';document.getElementById('csv-file-name').style.display=this.files[0]?'block':'none';loadCSV()" />
                         </div>
-                        <div style="display:flex;gap:8px;margin-top:12px">
-                            <button class="btn secondary" onclick="loadCSV()"><i class="fa-solid fa-file-import"></i> 読み込む</button>
+                        <div style="margin-top:12px">
                             <button class="btn success" onclick="saveModelAnswers()"><i class="fa-solid fa-floppy-disk"></i> 保存</button>
                         </div>
                         <div id="model-status" class="status-msg"></div>
                     </div>
                 </div>
-                <div class="answer-grid model-grid" id="model-answer-grid"></div>
+                <div class="model-grid" id="model-answer-grid" style="display:grid;gap:8px;margin-top:16px"></div>
             </div>
         </div>
 
@@ -261,10 +263,10 @@
                     <label class="toggle-switch"><input type="checkbox" id="disclosure-toggle" onchange="toggleDisclosure()"><span class="toggle-slider"></span></label>
                     <span>成績開示を有効にする</span>
                 </div>
-                <button class="btn" onclick="generateDisclosure()" id="gen-disclosure-btn"><i class="fa-solid fa-wand-magic-sparkles"></i> 開示データを生成</button>
+                <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px"><i class="fa-solid fa-circle-info"></i> 有効にすると開示データが自動生成されます</div>
                 <div id="disclosure-status" class="status-msg"></div>
                 <div id="disclosure-url" style="margin-top:12px;display:none">
-                    <div class="link-row"><span class="link-label"><i class="fa-solid fa-chart-column"></i> 開示URL</span><a id="disclosure-link" href="#" target="_blank"></a> <button class="btn secondary" style="padding:4px 10px;font-size:11px" onclick="copyUrl('disclosure-link', this)"><i class="fa-solid fa-copy"></i></button></div>
+                    <div class="link-row"><span class="link-label"><i class="fa-solid fa-chart-column"></i> 開示ページ</span><a id="disclosure-link" href="#" target="_blank" style="display:none"></a><button class="btn secondary" style="padding:6px 12px;font-size:12px" onclick="window.open(document.getElementById('disclosure-link').href)"><i class="fa-solid fa-arrow-up-right-from-square"></i></button><button class="btn secondary" style="padding:6px 12px;font-size:12px" onclick="copyUrl('disclosure-link', this)"><i class="fa-solid fa-copy"></i></button></div>
                 </div>
             </div>
             <div class="section glass-panel">

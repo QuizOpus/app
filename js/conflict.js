@@ -85,7 +85,7 @@ const projectId = session.projectId;
             const grid = document.getElementById('conflict-grid');
 
             if (conflicts.length === 0) {
-                grid.innerHTML = '<div class="no-conflict"><i class="fa-solid fa-check"></i> 要確認はありません</div>';
+                grid.innerHTML = '<div class="no-conflict"><i class="fa-solid fa-circle-check" style="font-size:48px;display:block;margin-bottom:16px;color:#34d399"></i> 要確認はありません</div>';
                 return;
             }
 

@@ -56,10 +56,7 @@
         .link-row a { color: var(--primary); word-break: break-all; }
         .link-row .link-label { color: var(--text-muted); white-space: nowrap; min-width: 120px; font-weight: 600; }
 
-        .model-grid { grid-template-columns: repeat(2, 1fr); }
-        @media (min-width: 600px) { .model-grid { grid-template-columns: repeat(5, 1fr); } }
-        @media (min-width: 1024px) { .model-grid { grid-template-columns: repeat(8, 1fr); } }
-        @media (min-width: 1280px) { .model-grid { grid-template-columns: repeat(10, 1fr); } }
+        .model-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); max-width: 100%; }
         .model-cell { background: linear-gradient(145deg, rgba(30,41,59,0.7), rgba(15,23,42,0.9)); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: 16px 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .model-cell:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.25); border-color: rgba(59,130,246,0.4); }
         .model-cell .q-label { color: var(--text-muted); font-size: 11px; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.05em; display: inline-block; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 12px; }
@@ -167,7 +164,10 @@
                 <h2><i class="fa-solid fa-database"></i> 保存済み答案</h2>
                 <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
                     <button class="btn danger" id="batch-delete-btn" onclick="batchDelete()" disabled><i class="fa-solid fa-trash"></i> 選択を削除</button>
-                    <label class="toggle-row" style="margin-left:auto;font-size:13px;cursor:pointer"><input type="checkbox" id="select-all-cb" onchange="toggleSelectAll()"> 全選択</label>
+                    <div class="toggle-row" style="margin-left:auto;">
+                        <label class="toggle-switch"><input type="checkbox" id="select-all-cb" onchange="toggleSelectAll()"><span class="toggle-slider"></span></label>
+                        <span style="font-size:13px;font-weight:600;color:var(--text-main);">全選択</span>
+                    </div>
                 </div>
                 <div id="entry-list">
                     <div style="color:var(--text-muted);font-size:14px;text-align:center;padding:20px">読み込み中...</div>

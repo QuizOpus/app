@@ -15,11 +15,11 @@ const params = new URLSearchParams(location.search);
         if (!projectId) return;
         try {
             const snap = await db.ref(`projects/${projectId}/publicSettings/projectName`).once('value');
-            const pName = snap.exists() ? snap.val() : 'キャンセル';
+            const pName = snap.exists() ? snap.val() : 'キャンセルフォーム';
             document.getElementById('cancel-title').textContent = pName;
-            document.title = pName + ' - キャンセル';
+            document.title = pName + ' - キャンセルフォーム';
         } catch(e) {
-            document.getElementById('cancel-title').textContent = 'キャンセル';
+            document.getElementById('cancel-title').textContent = 'キャンセルフォーム';
         }
     })();
 

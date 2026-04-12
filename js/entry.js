@@ -133,9 +133,9 @@ const params = new URLSearchParams(location.search);
                 const snap = await db.ref(`projects/${projectId}/publicSettings`).once('value');
                 if (snap.exists()) {
                     const settings = snap.val();
-                    const pName = settings.projectName || 'エントリー';
+                    const pName = settings.projectName || 'エントリーフォーム';
                     document.getElementById('project-title').textContent = pName;
-                    document.title = pName + ' - エントリー';
+                    document.title = pName + ' - エントリーフォーム';
 
                     // エントリー受付チェック
                     let blocked = false;

@@ -122,14 +122,7 @@ function showDbAuthError() {
                 }
             }
 
-            // 集計用: 問題セル初期化
-            const po = document.getElementById('progress-overview');
-            po.innerHTML = '';
-            for (let i = 1; i <= totalQuestions; i++) {
-                const cell = document.createElement('div');
-                cell.className = 'po-cell'; cell.id = `po-${i}`; cell.textContent = i;
-                po.appendChild(cell);
-            }
+            // 統計用: 総問題数
             document.getElementById('stat-total').textContent = totalQuestions;
 
             // エントリ番号取得（REST API shallowでキーのみ高速取得）
@@ -634,7 +627,7 @@ function showDbAuthError() {
         // TAB 4: 集計・設定
         // ============================
         function updateStatsView() {
-            let doneCount = 0, conflictCount = 0, confirmedCount = 0, inprogressCount = 0, untouchedCount = 0, allConfirmed = true;
+            let confirmedCount = 0, doneCount = 0, conflictCount = 0, inprogressCount = 0, untouchedCount = 0, allConfirmed = true;
             for (let q = 1; q <= totalQuestions; q++) {
                 const cs = Object.keys(scoresData[`__completed__q${q}`] || {}); 
                 const allDone = cs.length >= 3; 
@@ -654,27 +647,23 @@ function showDbAuthError() {
                 }
                 
                 const fc = allDone && (!hasConflict || allResolved); 
-                const cell = document.getElementById(`po-${q}`); 
-                if (!cell) continue;
-                cell.className = 'po-cell';
                 
-                let statusText = `第${q}問: `;
                 if (fc) { 
-                    cell.classList.add('confirmed'); confirmedCount++; statusText += '確定済み';
+                    confirmedCount++; 
                 } else if (hasConflict) { 
-                    cell.classList.add('conflict'); conflictCount++; allConfirmed = false; statusText += '要確認あり';
+                    conflictCount++; allConfirmed = false; 
                 } else if (allDone) { 
-                    cell.classList.add('done'); doneCount++; allConfirmed = false; statusText += '採点完了';
+                    doneCount++; allConfirmed = false; 
                 } else if (cs.length > 0) { 
-                    cell.classList.add('inprogress'); inprogressCount++; allConfirmed = false; statusText += '採点中';
+                    inprogressCount++; allConfirmed = false; 
                 } else { 
-                    untouchedCount++; allConfirmed = false; statusText += '未着手';
+                    untouchedCount++; allConfirmed = false; 
                 }
-                cell.title = statusText;
             }
-            document.getElementById('stat-done').textContent = doneCount + confirmedCount; 
+            // 表示上は confirmedCount と doneCount をマージして「完了」とする
+            const visualDoneCount = confirmedCount + doneCount;
+            document.getElementById('stat-done').textContent = visualDoneCount; 
             document.getElementById('stat-conflict').textContent = conflictCount; 
-            document.getElementById('stat-confirmed').textContent = confirmedCount;
             
             // Progress bar
             const bar = document.getElementById('stats-bar');
@@ -682,8 +671,7 @@ function showDbAuthError() {
             const pct = (n) => ((n / t) * 100).toFixed(1) + '%';
             bar.innerHTML = '';
             const segs = [
-                { cls: 'confirmed', count: confirmedCount, label: `${confirmedCount}` },
-                { cls: 'done', count: doneCount, label: `${doneCount}` },
+                { cls: 'confirmed', count: visualDoneCount, label: `${visualDoneCount}` }, // "採点完了" and "確定済み" combined
                 { cls: 'conflict', count: conflictCount, label: `${conflictCount}` },
                 { cls: 'inprogress', count: inprogressCount, label: `${inprogressCount}` },
                 { cls: 'untouched', count: untouchedCount, label: `${untouchedCount}` },
@@ -698,7 +686,8 @@ function showDbAuthError() {
             });
             
             const csvS = document.getElementById('csv-status'), csvB = document.getElementById('csv-btn');
-            if (allConfirmed && confirmedCount === totalQuestions && totalQuestions > 0) { 
+            // CSV出力の可否は表示用の完了カウントではなく、真の全問確定（allConfirmed）で判定
+            if (allConfirmed && totalQuestions > 0) { 
                 csvS.textContent = '全問確定済み。CSV出力できます。'; 
                 csvS.className = 'csv-status ready'; 
                 csvB.disabled = false; 

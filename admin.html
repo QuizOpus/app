@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="css/design_system.css">
     <style>
         body { padding: 24px; }
-        .admin-container { max-width: 1100px; margin: 0 auto; }
+        .admin-container { width: 100%; margin: 0 auto; }
 
         .top-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
         .top-bar h1 { font-size: 22px; }
@@ -37,12 +37,8 @@
         .stat-num { font-size: 32px; font-weight: 800; color: var(--primary); background: linear-gradient(135deg, #60a5fa, #3b82f6); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
         .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 8px; font-weight: 600; text-transform: uppercase; }
 
-        .progress-overview { display: flex; flex-wrap: wrap; gap: 3px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--glass-border); justify-content: flex-start; }
-        .po-cell { width: 14px; height: 14px; border-radius: 2px; background: rgba(255,255,255,0.05); font-size: 0; border: 1px solid rgba(255,255,255,0.05); cursor: help; }
-        .po-cell.done { background: #0e4429; border-color: rgba(0,255,0,0.1); }
-        .po-cell.confirmed { background: #26a641; border-color: rgba(0,255,0,0.2); box-shadow: 0 0 4px rgba(38,166,65,0.4); }
         .po-cell.conflict { background: #f85149; border-color: rgba(255,0,0,0.2); animation: pulse-red 2s infinite; }
-        .po-cell.inprogress { background: #003d6e; border-color: rgba(0,100,255,0.1); }
+        .po-cell.inprogress { background: #1f6feb; border-color: rgba(31,111,235,0.1); }
         @keyframes pulse-red { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
         .answer-item { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: var(--radius-sm); background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); margin-bottom: 6px; font-size: 13px; }
@@ -379,27 +375,21 @@
                         <div class="stat-label"><i class="fa-solid fa-list-ol"></i> 総問題数</div>
                     </div>
                     <div class="stat-card glass-panel">
-                        <div class="stat-num" id="stat-confirmed" style="color:#26a641">-</div>
-                        <div class="stat-label"><i class="fa-solid fa-circle-check"></i> 確定済み</div>
+                        <div class="stat-num" id="stat-done" style="color:#26a641">-</div>
+                        <div class="stat-label"><i class="fa-solid fa-circle-check"></i> 完了</div>
                     </div>
                     <div class="stat-card glass-panel">
                         <div class="stat-num" id="stat-conflict" style="color:#f85149">-</div>
                         <div class="stat-label"><i class="fa-solid fa-triangle-exclamation"></i> 要確認</div>
                     </div>
-                    <div class="stat-card glass-panel">
-                        <div class="stat-num" id="stat-done">-</div>
-                        <div class="stat-label"><i class="fa-solid fa-check"></i> 採点済み</div>
-                    </div>
                 </div>
                 <div class="stats-bar-wrap" id="stats-bar"></div>
                 <div class="stats-legend">
-                    <div class="stats-legend-item"><div class="stats-legend-dot" style="background:#26a641"></div>確定済み</div>
-                    <div class="stats-legend-item"><div class="stats-legend-dot" style="background:#0e6630"></div>採点完了</div>
+                    <div class="stats-legend-item"><div class="stats-legend-dot" style="background:#26a641"></div>完了</div>
                     <div class="stats-legend-item"><div class="stats-legend-dot" style="background:#f85149"></div>要確認</div>
                     <div class="stats-legend-item"><div class="stats-legend-dot" style="background:#1f6feb"></div>採点中</div>
                     <div class="stats-legend-item"><div class="stats-legend-dot" style="background:rgba(255,255,255,0.08)"></div>未着手</div>
                 </div>
-                <div class="progress-overview" id="progress-overview" style="margin-top:12px"></div>
             </div>
             <div class="section glass-panel">
                 <h2><i class="fa-solid fa-file-csv"></i> CSV出力</h2>

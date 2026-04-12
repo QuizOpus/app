@@ -71,6 +71,18 @@ function showDbAuthError() {
 
         document.getElementById('project-id-display').innerHTML = `<i class="fa-solid fa-copy"></i> ${projectId}`;
 
+        function copyProjectId() {
+            const el = document.getElementById('project-id-display');
+            navigator.clipboard.writeText(projectId).then(() => {
+                el.querySelector('i').className = 'fa-solid fa-check';
+                el.querySelector('i').style.color = '#34d399';
+                setTimeout(() => {
+                    el.querySelector('i').className = 'fa-solid fa-copy';
+                    el.querySelector('i').style.color = '';
+                }, 1500);
+            });
+        }
+
         let totalQuestions = 100;
         let scoresData = {};
         let entryNumbers = [];
@@ -82,7 +94,7 @@ function showDbAuthError() {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             const btns = document.querySelectorAll('.tab-btn');
-            const tabs = ['tab-entries', 'tab-prep', 'tab-scan', 'tab-stats'];
+            const tabs = ['tab-entries', 'tab-prep', 'tab-scan', 'tab-stats', 'tab-settings'];
             btns[tabs.indexOf(tabId)]?.classList.add('active');
         }
 

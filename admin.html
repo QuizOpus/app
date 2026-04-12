@@ -213,7 +213,7 @@
             <h1><i class="fa-solid fa-gear"></i> 管理画面</h1>
         </div>
         <div class="header-right">
-            <div class="id-copy-badge" id="project-id-display" title="クリックでコピー" onclick="navigator.clipboard.writeText(projectId).then(()=>{this.innerHTML='<i class=&quot;fa-solid fa-check&quot;></i> コピー済み';setTimeout(()=>this.innerHTML='<i class=&quot;fa-solid fa-copy&quot;></i> '+projectId,1500)})"></div>
+            <div class="id-copy-badge" id="project-id-display" title="クリックでコピー" onclick="copyProjectId()"></div>
         </div>
     </div>
 
@@ -227,6 +227,7 @@
             <button class="tab-btn active" onclick="switchTab('tab-prep')"><i class="fa-solid fa-file-lines"></i> 採点準備</button>
             <button class="tab-btn" onclick="switchTab('tab-scan')"><i class="fa-solid fa-camera"></i> 答案管理</button>
             <button class="tab-btn" onclick="switchTab('tab-stats')"><i class="fa-solid fa-chart-pie"></i> 集計</button>
+            <button class="tab-btn" onclick="switchTab('tab-settings')"><i class="fa-solid fa-wrench"></i> 設定</button>
         </div>
 
         <!-- ==================== TAB 0: 参加者管理 ==================== -->
@@ -299,13 +300,6 @@
                             <tr><td colspan="7" style="padding:20px;text-align:center;color:var(--text-muted)">読み込み中...</td></tr>
                         </tbody>
                     </table>
-                </div>
-            </div>
-            <div class="section glass-panel">
-                <h2><i class="fa-solid fa-signature"></i> プロジェクト設定</h2>
-                <div style="display:flex;gap:12px;align-items:center;">
-                    <input type="text" id="setting-project-name" placeholder="プロジェクト名を入力" style="flex:1;" />
-                    <button class="btn" style="width:auto;padding:0 24px;" onclick="updateProjectName()"><i class="fa-solid fa-arrows-rotate"></i> 更新</button>
                 </div>
             </div>
         </div>
@@ -439,8 +433,17 @@
                     </table>
                 </div>
             </div>
+        </div>
 
-
+        <!-- ==================== TAB 5: 設定 ==================== -->
+        <div class="tab-content" id="tab-settings">
+            <div class="section glass-panel">
+                <h2><i class="fa-solid fa-signature"></i> プロジェクト名</h2>
+                <div style="display:flex;gap:12px;align-items:center;">
+                    <input type="text" id="setting-project-name" placeholder="プロジェクト名を入力" style="flex:1;" />
+                    <button class="btn" style="width:auto;padding:10px 20px;" onclick="updateProjectName()"><i class="fa-solid fa-arrows-rotate"></i> 更新</button>
+                </div>
+            </div>
             <div class="section glass-panel">
                 <h2><i class="fa-solid fa-box-archive"></i> データバックアップ</h2>
                 <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;"><i class="fa-solid fa-circle-info"></i> 全データを.ciqファイルとして書き出します。</p>
@@ -453,7 +456,6 @@
             </div>
         </div>
 
-    </div>
     </div>
     </div>
     

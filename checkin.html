@@ -60,36 +60,9 @@
     </style>
 </head>
 <body>
-    <div class="header-bar">
-        <div class="header-left">
-            <h1 id="page-title"><i class="fa-solid fa-qrcode"></i> 当日受付</h1>
-        </div>
-        <div class="header-right">
-            <div class="admin-dropdown" id="global-menu-container">
-                <button class="btn secondary" onclick="document.getElementById('global-menu').classList.toggle('show')">
-                    <i class="fa-solid fa-bars"></i> メニュー
-                </button>
-                <div id="global-menu" class="dropdown-content">
-                    <div style="padding: 12px; border-bottom: 1px solid var(--glass-border); margin-bottom: 8px; text-align: center;">
-                        <div id="dropdown-scorer-name" style="font-weight: 800; color: var(--text-main); font-size: 15px; margin-bottom: 6px;"></div>
-                        <div id="dropdown-scorer-role" class="scorer-badge" style="display:inline-block; padding: 4px 12px;"></div>
-                    </div>
-                    <button class="btn secondary" onclick="location.href='judge.html'"><i class="fa-solid fa-list-check"></i> 問題一覧</button>
-                    <button class="btn secondary" onclick="location.href='entry.html?pid='+projectId"><i class="fa-solid fa-pen-to-square"></i> エントリーフォーム</button>
-                    <button class="btn secondary" onclick="location.href='entry_list.html?pid='+projectId"><i class="fa-solid fa-list"></i> エントリーリスト</button>
-                    <button class="btn secondary active" onclick="location.href='checkin.html?pid='+projectId"><i class="fa-solid fa-qrcode"></i> 当日受付</button>
-                    
-                    <div id="admin-menu-items" style="display:none; flex-direction:column; gap:4px; margin-top:8px; padding-top:8px; border-top:1px solid var(--glass-border)">
-                        <button class="btn secondary" onclick="location.href='admin.html'"><i class="fa-solid fa-gauge"></i> 管理画面</button>
-                        <button class="btn danger" onclick="location.href='conflict.html'"><i class="fa-solid fa-triangle-exclamation"></i> 要確認</button>
-                    </div>
-
-                    <div style="margin-top:8px; padding-top:8px; border-top:1px solid var(--glass-border)">
-                        <button class="btn secondary" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> ログアウト</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="top-bar" style="width:100%; max-width:500px; display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+        <button class="btn secondary" onclick="location.href='judge.html'"><i class="fa-solid fa-arrow-left"></i> 戻る</button>
+        <h1 id="page-title" style="font-size:22px; flex:1;"><i class="fa-solid fa-qrcode"></i> 当日受付</h1>
     </div>
 
     <div id="camera-container">

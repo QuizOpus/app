@@ -24,9 +24,6 @@ const projectId = session.projectId;
             // メニュー表示の初期化
             document.getElementById('dropdown-scorer-name').textContent = session.scorerName || '管理者';
             document.getElementById('dropdown-scorer-role').innerHTML = scorerRole === 'admin' ? '<i class="fa-solid fa-crown"></i> 管理者' : '<i class="fa-solid fa-user-check"></i> 採点者';
-            if (scorerRole === 'admin') {
-                document.getElementById('admin-menu-items').style.display = 'flex';
-            }
 
             const configSnap = await db.ref(`projects/${projectId}/protected/${secretHash}/config`).once('value');
             if(configSnap.exists()) {
@@ -210,10 +207,7 @@ const projectId = session.projectId;
             }
         });
 
-        function logout() {
-            session.clear();
-            location.href = 'index.html';
-        }
+
 
         init();
         async function showPreview(entryNum) {

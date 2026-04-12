@@ -11,20 +11,8 @@ const projectId = session.projectId;
         let lastUUID = '';
         let hideTimer = null;
 
-        function logout() {
-            session.clear();
-            location.href = 'index.html';
-        }
-
         // プロジェクト名読み込み
         (async function init() {
-            // メニュー表示の初期化
-            document.getElementById('dropdown-scorer-name').textContent = session.scorerName || '受付者';
-            document.getElementById('dropdown-scorer-role').innerHTML = session.scorerRole === 'admin' ? '<i class="fa-solid fa-crown"></i> 管理者' : '<i class="fa-solid fa-user-check"></i> 採点者';
-            if (session.scorerRole === 'admin') {
-                document.getElementById('admin-menu-items').style.display = 'flex';
-            }
-
             const snap = await db.ref(`projects/${projectId}/settings`).once('value');
             if (snap.exists()) {
                 const s = snap.val();

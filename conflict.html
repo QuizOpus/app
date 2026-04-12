@@ -117,23 +117,19 @@
                 <button class="btn secondary" onclick="document.getElementById('global-menu').classList.toggle('show')">
                     <i class="fa-solid fa-bars"></i> メニュー
                 </button>
-                <div id="global-menu" class="dropdown-content">
+                <div id="global-menu" class="dropdown-content" style="min-width:220px">
                     <div style="padding: 12px; border-bottom: 1px solid var(--glass-border); margin-bottom: 8px; text-align: center;">
                         <div id="dropdown-scorer-name" style="font-weight: 800; color: var(--text-main); font-size: 15px; margin-bottom: 6px;"></div>
                         <div id="dropdown-scorer-role" class="scorer-badge" style="display:inline-block; padding: 4px 12px;"></div>
                     </div>
-                    <button class="btn secondary" onclick="location.href='judge.html'"><i class="fa-solid fa-list-check"></i> 問題一覧</button>
-                    <button class="btn secondary" onclick="location.href='entry.html?pid='+projectId"><i class="fa-solid fa-pen-to-square"></i> エントリーフォーム</button>
-                    <button class="btn secondary" onclick="location.href='entry_list.html?pid='+projectId"><i class="fa-solid fa-list"></i> エントリーリスト</button>
-                    <button class="btn secondary" onclick="location.href='checkin.html?pid='+projectId"><i class="fa-solid fa-qrcode"></i> 当日受付</button>
-                    
-                    <div id="admin-menu-items" style="display:flex; flex-direction:column; gap:4px; margin-top:8px; padding-top:8px; border-top:1px solid var(--glass-border)">
-                        <button class="btn secondary" onclick="location.href='admin.html'"><i class="fa-solid fa-gauge"></i> 管理画面</button>
-                        <button class="btn danger active" onclick="location.href='conflict.html'"><i class="fa-solid fa-triangle-exclamation"></i> 要確認</button>
-                    </div>
+                    <button class="btn secondary" onclick="location.href='admin.html'"><i class="fa-solid fa-gauge"></i> 管理画面</button>
+                    <button class="btn danger active" onclick="location.href='conflict.html'"><i class="fa-solid fa-triangle-exclamation"></i> 要確認</button>
+                    <button class="btn secondary" onclick="location.href='checkin.html'"><i class="fa-solid fa-qrcode"></i> 当日受付</button>
+                    <button class="btn secondary" onclick="window.open('entry.html?pid='+projectId,'_blank')"><i class="fa-solid fa-pen-to-square"></i> エントリーフォーム</button>
+                    <button class="btn secondary" onclick="window.open('entry_list.html?pid='+projectId,'_blank')"><i class="fa-solid fa-list"></i> エントリーリスト</button>
 
                     <div style="margin-top:8px; padding-top:8px; border-top:1px solid var(--glass-border)">
-                        <button class="btn secondary" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> ログアウト</button>
+                        <button class="btn secondary" onclick="logout()" style="width:100%"><i class="fa-solid fa-right-from-bracket"></i> ログアウト</button>
                     </div>
                 </div>
             </div>

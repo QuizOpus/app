@@ -128,23 +128,13 @@ const params = new URLSearchParams(location.search);
         async function init() {
             if (!projectId) return;
 
-            // メニュー表示の初期化
-            if (session.scorerName) {
-                document.getElementById('menu-user-info').style.display = 'block';
-                document.getElementById('dropdown-scorer-name').textContent = session.scorerName;
-                document.getElementById('dropdown-scorer-role').innerHTML = session.scorerRole === 'admin' ? '<i class="fa-solid fa-crown"></i> 管理者' : '<i class="fa-solid fa-user-check"></i> 採点者';
-                if (session.scorerRole === 'admin') {
-                    document.getElementById('admin-menu-items').style.display = 'flex';
-                }
-            }
-
             try {
                 // プロジェクト名を取得して表示
                 const snap = await db.ref(`projects/${projectId}/publicSettings`).once('value');
                 if (snap.exists()) {
                     const settings = snap.val();
                     const pName = settings.projectName || '大会エントリー';
-                    document.getElementById('project-title').innerHTML = `<i class="fa-solid fa-pen-nib"></i> ${pName}`;
+                    document.getElementById('project-title').innerHTML = `<i class="fa-solid fa-pen-to-square"></i> ${pName}`;
                     document.title = pName + ' - エントリー';
 
                     
@@ -161,11 +151,6 @@ const params = new URLSearchParams(location.search);
                 }
             } catch (e) {
             }
-        }
-
-        function logout() {
-            session.clear();
-            location.href = 'index.html';
         }
 
         init();

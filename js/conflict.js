@@ -21,9 +21,6 @@ const projectId = session.projectId;
         }
 
         async function init() {
-            // メニュー表示の初期化
-            document.getElementById('dropdown-scorer-name').textContent = session.scorerName || '管理者';
-            document.getElementById('dropdown-scorer-role').innerHTML = scorerRole === 'admin' ? '<i class="fa-solid fa-crown"></i> 管理者' : '<i class="fa-solid fa-user-check"></i> 採点者';
 
             const configSnap = await db.ref(`projects/${projectId}/protected/${secretHash}/config`).once('value');
             if(configSnap.exists()) {

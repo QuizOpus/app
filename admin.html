@@ -70,29 +70,9 @@
         <div id="admin-toast" style="display:none; position:fixed; top:20px; left:50%; transform:translateX(-50%); z-index:10000; color:white; padding:12px 24px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.3); font-size:14px; text-align:center;"></div>
 
         <div class="top-bar">
+            <button class="btn secondary" onclick="location.href='judge.html'"><i class="fa-solid fa-arrow-left"></i> 戻る</button>
             <h1><i class="fa-solid fa-gear"></i> 管理画面</h1>
             <div class="id-copy-badge" id="project-id-display" title="クリックでコピー" onclick="navigator.clipboard.writeText(projectId).then(()=>{this.innerHTML='<i class=&quot;fa-solid fa-check&quot;></i> コピー済み';setTimeout(()=>this.innerHTML='<i class=&quot;fa-solid fa-copy&quot;></i> '+projectId,1500)})"></div>
-            
-            <div class="admin-dropdown" id="global-menu-container" style="margin-left:auto">
-                <button class="btn secondary" onclick="document.getElementById('global-menu').classList.toggle('show')">
-                    <i class="fa-solid fa-bars"></i> メニュー
-                </button>
-                <div id="global-menu" class="dropdown-content" style="min-width:220px">
-                    <div style="padding: 12px; border-bottom: 1px solid var(--glass-border); margin-bottom: 8px; text-align: center;">
-                        <div id="dropdown-scorer-name" style="font-weight: 800; color: var(--text-main); font-size: 15px; margin-bottom: 6px;"></div>
-                        <div id="dropdown-scorer-role" class="scorer-badge" style="display:inline-block; padding: 4px 12px;"></div>
-                    </div>
-                    <button class="btn secondary active" onclick="location.href='admin.html'"><i class="fa-solid fa-gauge"></i> 管理画面</button>
-                    <button class="btn danger" onclick="location.href='conflict.html'"><i class="fa-solid fa-triangle-exclamation"></i> 要確認</button>
-                    <button class="btn secondary" onclick="location.href='checkin.html'"><i class="fa-solid fa-qrcode"></i> 当日受付</button>
-                    <button class="btn secondary" onclick="window.open('entry.html?pid='+projectId,'_blank')"><i class="fa-solid fa-pen-to-square"></i> エントリーフォーム</button>
-                    <button class="btn secondary" onclick="window.open('entry_list.html?pid='+projectId,'_blank')"><i class="fa-solid fa-list"></i> エントリーリスト</button>
-
-                    <div style="margin-top:8px; padding-top:8px; border-top:1px solid var(--glass-border)">
-                        <button class="btn secondary" onclick="logout()" style="width:100%"><i class="fa-solid fa-right-from-bracket"></i> ログアウト</button>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <div class="tabs">

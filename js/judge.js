@@ -1,3 +1,4 @@
+// judge.js — 問題一覧（REST + ポーリング版・WebSocket接続ゼロ）
 
 const auth = requireAuth();
 const { projectId, secretHash, scorerName, scorerRole } = auth || {};
@@ -6,14 +7,13 @@ if (!auth) throw new Error('auth');
 let totalQuestions = 100;
 
         async function initializeApp() {
-            // プロジェクト設定を取得
-            const snapConfig = await db.ref(`projects/${projectId}/protected/${secretHash}/config`).once('value');
-            if (snapConfig.exists()) {
-                totalQuestions = snapConfig.val().questionCount || 100;
+            // プロジェクト設定を取得 (REST)
+            const config = await dbGet(`projects/${projectId}/protected/${secretHash}/config`);
+            if (config) {
+                totalQuestions = config.questionCount || 100;
             }
-            const snapSettings = await db.ref(`projects/${projectId}/publicSettings`).once('value');
-            if (snapSettings.exists()) {
-                const settings = snapSettings.val();
+            const settings = await dbGet(`projects/${projectId}/publicSettings`);
+            if (settings) {
                 document.getElementById('project-title').textContent = settings.projectName || '問題一覧';
             }
 
@@ -44,41 +44,43 @@ let totalQuestions = 100;
                 qGrid.appendChild(card);
             }
 
-            db.ref(`projects/${projectId}/protected/${secretHash}/scores`).on('value', snap => {
-                updateGrid(snap.val() || {});
-            });
+            // ポーリングでスコア状態を定期取得（WebSocket .on() の代替）
+            const scorePoller = new Poller(
+                `projects/${projectId}/protected/${secretHash}/scores`,
+                (data) => updateGrid(data || {}),
+                3000
+            );
+            IdleManager.register(scorePoller);
+            scorePoller.start();
+            IdleManager.init();
         }
 
-        function fetchEntriesMaster() {
-            db.ref(`projects/${projectId}/entries`).once('value', async snap => {
-                if (snap.exists()) {
-                    const masterData = {};
-                    const privJwkStr = session.get('privateKeyJwk');
-                    let privJwk = null;
-                    if (privJwkStr) {
-                        try { privJwk = JSON.parse(privJwkStr); } catch(e){}
-                    }
-
-                    const children = [];
-                    snap.forEach(c => children.push(c.val()));
-                    
-                    for (const v of children) {
-                        if (!v.entryNumber) continue;
-                        let name = '回答者 ' + v.entryNumber;
-                        if (v.encryptedPII && privJwk) {
-                            try {
-                                const jsonStr = await AppCrypto.decryptRSA(v.encryptedPII, privJwk);
-                                const pii = JSON.parse(jsonStr);
-                                name = `${pii.familyName} ${pii.firstName}`;
-                            } catch(e) {}
-                        } else if (!v.encryptedPII && v.familyName) {
-                            name = `${v.familyName} ${v.firstName}`;
-                        }
-                        masterData[v.entryNumber] = { name };
-                    }
-                    localStorage.setItem(`masterData_${projectId}`, JSON.stringify(masterData));
+        async function fetchEntriesMaster() {
+            const entriesData = await dbGet(`projects/${projectId}/entries`);
+            if (entriesData) {
+                const masterData = {};
+                const privJwkStr = session.get('privateKeyJwk');
+                let privJwk = null;
+                if (privJwkStr) {
+                    try { privJwk = JSON.parse(privJwkStr); } catch(e){}
                 }
-            });
+
+                for (const v of Object.values(entriesData)) {
+                    if (!v.entryNumber) continue;
+                    let name = '回答者 ' + v.entryNumber;
+                    if (v.encryptedPII && privJwk) {
+                        try {
+                            const jsonStr = await AppCrypto.decryptRSA(v.encryptedPII, privJwk);
+                            const pii = JSON.parse(jsonStr);
+                            name = `${pii.familyName} ${pii.firstName}`;
+                        } catch(e) {}
+                    } else if (!v.encryptedPII && v.familyName) {
+                        name = `${v.familyName} ${v.firstName}`;
+                    }
+                    masterData[v.entryNumber] = { name };
+                }
+                localStorage.setItem(`masterData_${projectId}`, JSON.stringify(masterData));
+            }
         }
 
         function updateGrid(scores) {

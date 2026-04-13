@@ -3,10 +3,245 @@
  * 
  * 全ページで使い回す関数・定数を集約。
  * config.js, crypto.js の後に読み込むこと。
+ *
+ * === Zero-Cost Scale Architecture ===
+ * すべてのデータベース通信を REST API (fetch) で行い、
+ * WebSocket 接続数 (Spark: 100) の制限を完全に回避する。
  */
+
+// ============================================
+//  定数
+// ============================================
 
 // Firebase REST API ベースURL
 const FIREBASE_REST_BASE = 'https://quziopus-default-rtdb.asia-southeast1.firebasedatabase.app';
+
+// firebase.database.ServerValue.TIMESTAMP の REST 版
+const SERVER_TIMESTAMP = { ".sv": "timestamp" };
+
+// ============================================
+//  REST API ヘルパー
+// ============================================
+
+/**
+ * データ取得 (GET)
+ * @param {string} path - 例: 'projects/xxx/publicSettings'
+ * @returns {Promise<any>} data or null
+ */
+async function dbGet(path) {
+    const res = await fetch(`${FIREBASE_REST_BASE}/${path}.json`);
+    if (!res.ok) {
+        if (res.status === 401 || res.status === 403) { showDbAuthError(); throw new Error('PERMISSION_DENIED'); }
+        throw new Error(`dbGet(${path}) failed: ${res.status}`);
+    }
+    return await res.json();
+}
+
+/**
+ * データセット (PUT) — パス全体を上書き
+ */
+async function dbSet(path, data) {
+    const res = await fetch(`${FIREBASE_REST_BASE}/${path}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        if (res.status === 401 || res.status === 403) { showDbAuthError(); throw new Error('PERMISSION_DENIED'); }
+        throw new Error(`dbSet(${path}) failed: ${res.status}`);
+    }
+    return await res.json();
+}
+
+/**
+ * データ更新 (PATCH) — 既存データにマージ
+ */
+async function dbUpdate(path, data) {
+    const res = await fetch(`${FIREBASE_REST_BASE}/${path}.json`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        if (res.status === 401 || res.status === 403) { showDbAuthError(); throw new Error('PERMISSION_DENIED'); }
+        throw new Error(`dbUpdate(${path}) failed: ${res.status}`);
+    }
+    return await res.json();
+}
+
+/**
+ * データ削除 (DELETE)
+ */
+async function dbRemove(path) {
+    const res = await fetch(`${FIREBASE_REST_BASE}/${path}.json`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(`dbRemove(${path}) failed: ${res.status}`);
+}
+
+/**
+ * シャロー読み取り (キーのみ高速取得)
+ */
+async function dbShallow(path) {
+    const res = await fetch(`${FIREBASE_REST_BASE}/${path}.json?shallow=true`);
+    if (!res.ok) throw new Error(`dbShallow(${path}) failed: ${res.status}`);
+    return await res.json();
+}
+
+/**
+ * クエリ (orderByChild + equalTo)
+ */
+async function dbQuery(path, orderBy, equalTo) {
+    const eqParam = typeof equalTo === 'string' ? `"${equalTo}"` : equalTo;
+    const url = `${FIREBASE_REST_BASE}/${path}.json?orderBy="${orderBy}"&equalTo=${eqParam}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`dbQuery(${path}) failed: ${res.status}`);
+    return await res.json();
+}
+
+/**
+ * ETag ベースのトランザクション（排他制御付き読み書き）
+ * WebSocket 接続なしでアトミックな更新を実現する。
+ * 4人目の滑り込み防止や受付番号の連番管理に使用。
+ *
+ * @param {string} path
+ * @param {function} updateFn - 現在の値を受け取り新しい値を返す。undefined で中止。
+ * @param {number} maxRetries
+ * @returns {Promise<{committed: boolean, value: any}>}
+ */
+async function dbTransaction(path, updateFn, maxRetries = 15) {
+    const url = `${FIREBASE_REST_BASE}/${path}.json`;
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        const res = await fetch(url, { headers: { 'X-Firebase-ETag': 'true' } });
+        if (!res.ok) throw new Error(`dbTransaction GET failed: ${res.status}`);
+        const etag = res.headers.get('ETag');
+        const currentVal = await res.json();
+        const newVal = updateFn(currentVal);
+        if (newVal === undefined) return { committed: false, value: currentVal };
+
+        const putRes = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'if-match': etag },
+            body: JSON.stringify(newVal)
+        });
+        if (putRes.ok) {
+            return { committed: true, value: newVal };
+        }
+        if (putRes.status === 412) {
+            // 別の人が先に書き込んだ → ランダム待機してリトライ
+            await new Promise(r => setTimeout(r, 50 + Math.random() * 150));
+            continue;
+        }
+        throw new Error(`dbTransaction PUT failed: ${putRes.status}`);
+    }
+    throw new Error('dbTransaction: リトライ回数超過');
+}
+
+// ============================================
+//  ポーリング（リアルタイム同期の代替）
+//  3〜5秒間隔でデータを取得し、WebSocket 接続ゼロを実現
+// ============================================
+
+class Poller {
+    /**
+     * @param {string} path - Firebase パス
+     * @param {function} callback - データ受信時のコールバック
+     * @param {number} intervalMs - ポーリング間隔 (デフォルト 3000ms)
+     */
+    constructor(path, callback, intervalMs = 3000) {
+        this.path = path;
+        this.callback = callback;
+        this.intervalMs = intervalMs;
+        this._timerId = null;
+        this._active = false;
+    }
+
+    async _tick() {
+        if (!this._active) return;
+        try {
+            const data = await dbGet(this.path);
+            this.callback(data);
+        } catch (e) {
+            console.error(`Poller(${this.path}):`, e);
+        }
+        if (this._active) {
+            this._timerId = setTimeout(() => this._tick(), this.intervalMs);
+        }
+    }
+
+    start() {
+        if (this._active) return this;
+        this._active = true;
+        this._tick(); // 初回は即座に取得
+        return this;
+    }
+
+    stop() {
+        this._active = false;
+        if (this._timerId) { clearTimeout(this._timerId); this._timerId = null; }
+        return this;
+    }
+
+    restart() { this.stop(); this.start(); return this; }
+}
+
+// ============================================
+//  アイドル監視 & 通信管理
+//  無操作時にポーリングを停止して帯域を節約
+// ============================================
+
+const IdleManager = {
+    _pollers: [],
+    _idleTimer: null,
+    _visTimer: null,
+    _paused: false,
+    IDLE_MS: 10 * 60 * 1000, // 10分無操作で通信停止
+
+    register(poller) { this._pollers.push(poller); },
+
+    init() {
+        // タブ切替監視
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this._visTimer = setTimeout(() => {
+                    if (document.hidden) this.pause();
+                }, 60000); // 裏に回って60秒後に停止
+            } else {
+                clearTimeout(this._visTimer);
+                if (this._paused) this.resume();
+                this.resetIdle();
+            }
+        });
+        // ユーザー操作監視
+        ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => {
+            document.addEventListener(evt, () => {
+                if (this._paused) this.resume();
+                this.resetIdle();
+            }, { passive: true });
+        });
+        this.resetIdle();
+    },
+
+    resetIdle() {
+        if (this._idleTimer) clearTimeout(this._idleTimer);
+        this._idleTimer = setTimeout(() => this.pause(), this.IDLE_MS);
+    },
+
+    pause() {
+        if (this._paused) return;
+        this._paused = true;
+        this._pollers.forEach(p => p.stop());
+        showToast('無操作のため通信を一時停止しました。画面を操作すると再開します。', 'info', 15000);
+    },
+
+    resume() {
+        if (!this._paused) return;
+        this._paused = false;
+        this._pollers.forEach(p => p.start());
+    }
+};
+
+// ============================================
+//  共通UIユーティリティ
+// ============================================
 
 /**
  * データベース認証エラー表示
@@ -58,11 +293,8 @@ function getMasterData(projectId) {
 }
 
 /**
- * 答案画像プレビューオーバーレイ
+ * 答案画像プレビューオーバーレイ (REST版)
  * question.html / conflict.html で共通利用
- * @param {string} projectId
- * @param {string} secretHash
- * @param {number|string} entryNum
  */
 async function showPreview(projectId, secretHash, entryNum) {
     let overlay = document.getElementById('preview-overlay');
@@ -85,10 +317,12 @@ async function showPreview(projectId, secretHash, entryNum) {
         </div>`;
     overlay.style.display = 'block';
 
-    const snap = await db.ref(`projects/${projectId}/protected/${secretHash}/answers/${entryNum}/pageImage`).get();
+    const answerData = await dbGet(`projects/${projectId}/protected/${secretHash}/answers/${entryNum}`);
     const pc = document.getElementById('preview-content');
-    if (snap.exists()) {
-        pc.innerHTML = `<img src="${snap.val()}" alt="${name}" style="max-width:100%;max-height:85vh;border-radius:8px;background:white;box-shadow:0 4px 24px rgba(0,0,0,0.5)">`;
+    // Storage URL 優先、旧 Base64 フォールバック
+    const imageUrl = answerData?.pageImageUrl || answerData?.pageImage;
+    if (imageUrl) {
+        pc.innerHTML = `<img src="${imageUrl}" alt="${name}" style="max-width:100%;max-height:85vh;border-radius:8px;background:white;box-shadow:0 4px 24px rgba(0,0,0,0.5)">`;
     } else {
         pc.innerHTML = '<div style="color:#aaa;padding:40px">ページ画像が保存されていません。管理画面から答案を再読み込みしてください。</div>';
     }

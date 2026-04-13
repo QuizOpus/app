@@ -1,3 +1,5 @@
+// checkin.js — QR受付（完全REST版・WebSocket接続ゼロ）
+
 const projectId = session.projectId;
 const secretHash = session.get("secretHash");
 if (!projectId) {
@@ -14,19 +16,18 @@ if (!projectId) {
         let lastUUID = '';
         let hideTimer = null;
 
-        // プロジェクト名読み込み
+        // プロジェクト名読み込み (REST)
         (async function init() {
-            const snap = await db.ref(`projects/${projectId}/settings`).once('value');
-            if (snap.exists()) {
-                const s = snap.val();
+            const s = await dbGet(`projects/${projectId}/settings`);
+            if (s) {
                 document.getElementById('page-title').innerHTML = `<i class="fa-solid fa-qrcode"></i> ${s.projectName || ''} 受付`;
             }
             loadStats();
         })();
 
         async function loadStats() {
-            const snap = await db.ref(`projects/${projectId}/entries`).once('value');
-            if (!snap.exists()) {
+            const data = await dbGet(`projects/${projectId}/entries`);
+            if (!data) {
                 document.getElementById('stat-total').textContent = 0;
                 document.getElementById('stat-checked').textContent = 0;
                 document.getElementById('stat-remaining').textContent = 0;
@@ -34,10 +35,10 @@ if (!projectId) {
                 return;
             }
             let total = 0, checked = 0;
-            snap.forEach(c => {
+            for (const v of Object.values(data)) {
                 total++;
-                if (c.val().checkedIn) checked++;
-            });
+                if (v.checkedIn) checked++;
+            }
             document.getElementById('stat-total').textContent = total;
             document.getElementById('stat-checked').textContent = checked;
             document.getElementById('stat-remaining').textContent = total - checked;
@@ -81,21 +82,20 @@ if (!projectId) {
             resultDiv.innerHTML = '<div>⏳ 読み込み中...</div>';
         }
 
-        // Firebase直接参照（リファレンスのGAS方式ではなく、Firebase直接）
+        // Firebase REST直接参照
         async function processQR(uuid) {
             try {
-                const snap = await db.ref(`projects/${projectId}/entries/${uuid}`).once('value');
+                const data = await dbGet(`projects/${projectId}/entries/${uuid}`);
 
-                if (!snap.exists()) {
+                if (!data) {
                     showResultUI('error', '<i class="fa-solid fa-xmark"></i> 該当者が見つかりません', '', '');
                 } else {
-                    const data = snap.val();
                     if (data.status === 'canceled') {
                         showResultUI('canceled', '<i class="fa-solid fa-xmark"></i> キャンセル済み', `${data.familyName} ${data.firstName}`, `受付番号 ${data.entryNumber}`);
                     } else if (data.checkedIn) {
                         showResultUI('already', '<i class="fa-solid fa-triangle-exclamation"></i>️ 受付済み', `${data.familyName} ${data.firstName}`, `受付番号 ${data.entryNumber}`);
                     } else {
-                        await db.ref(`projects/${projectId}/entries/${uuid}/checkedIn`).set(true);
+                        await dbSet(`projects/${projectId}/entries/${uuid}/checkedIn`, true);
                         showResultUI('success', '<i class="fa-solid fa-check"></i> 受付完了', `${data.familyName} ${data.firstName}`, `受付番号 ${data.entryNumber}`);
                         loadStats();
                     }

@@ -1,3 +1,5 @@
+// disclosure.js — 成績開示（完全REST版・WebSocket接続ゼロ）
+
 const params = new URLSearchParams(location.search);
     const projectId = params.get('pid');
     const secretHash = params.get('secret');
@@ -11,10 +13,9 @@ const params = new URLSearchParams(location.search);
 
         // プロジェクト名を取得して表示
         try {
-            const settingsSnap = await db.ref(`projects/${projectId}/publicSettings/projectName`).once('value');
-            const pName = settingsSnap.exists() ? settingsSnap.val() : '成績開示';
-            document.getElementById('logo-title').textContent = pName;
-            document.title = pName + ' - 成績開示';
+            const pName = await dbGet(`projects/${projectId}/publicSettings/projectName`);
+            document.getElementById('logo-title').textContent = pName || '成績開示';
+            document.title = (pName || '成績開示') + ' - 成績開示';
         } catch(e) {
             document.getElementById('logo-title').textContent = '成績開示';
         }
@@ -42,11 +43,10 @@ const params = new URLSearchParams(location.search);
         btn.disabled = true; btn.textContent = '確認中...';
 
         try {
-            // パスワード照合: entries からUUIDで検索
-            const entriesSnap = await db.ref(`projects/${projectId}/entries`)
-                .orderByChild('entryNumber').equalTo(num).once('value');
+            // パスワード照合: entries から entryNumber で検索
+            const entriesData = await dbQuery(`projects/${projectId}/entries`, 'entryNumber', num);
 
-            if (!entriesSnap.exists()) {
+            if (!entriesData || Object.keys(entriesData).length === 0) {
                 errEl.textContent = '該当する受付番号が見つかりません。';
                 errEl.style.display = 'block'; btn.disabled = false; btn.textContent = '成績を確認する'; return;
             }
@@ -55,12 +55,11 @@ const params = new URLSearchParams(location.search);
             let entryData = null;
             const pwHash = await AppCrypto.hashPassword(pw);
 
-            entriesSnap.forEach(child => {
-                const d = child.val();
+            for (const d of Object.values(entriesData)) {
                 if (d.disclosurePw === pwHash || d.disclosurePw === pw) {
                     matched = true; entryData = d;
                 }
-            });
+            }
 
             if (!matched) {
                 errEl.textContent = 'パスワードが正しくありません。';
@@ -68,13 +67,12 @@ const params = new URLSearchParams(location.search);
             }
 
             // 開示データ取得
-            const discSnap = await db.ref(`projects/${projectId}/protected/${secretHash}/disclosure/${num}`).get();
-            if (!discSnap.exists()) {
+            const disc = await dbGet(`projects/${projectId}/protected/${secretHash}/disclosure/${num}`);
+            if (!disc) {
                 errEl.textContent = '開示データがまだ生成されていません。管理者にお問い合わせください。';
                 errEl.style.display = 'block'; btn.disabled = false; btn.textContent = '成績を確認する'; return;
             }
 
-            const disc = discSnap.val();
             showResult(entryData.entryName || `受付番号 ${num}`, disc.score, disc.results, disc.totalQuestions || 100);
 
         } catch(e) {

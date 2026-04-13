@@ -1,3 +1,5 @@
+// entry_list.js — エントリーリスト（完全REST版・WebSocket接続ゼロ）
+
 const params = new URLSearchParams(location.search);
     const projectId = params.get('pid');
     const secretHash = params.get('secret');
@@ -11,10 +13,9 @@ const params = new URLSearchParams(location.search);
 
         // プロジェクト名を取得して表示
         try {
-            const s = await db.ref(`projects/${projectId}/publicSettings/projectName`).once('value');
-            const pName = s.exists() ? s.val() : 'エントリーリスト';
-            document.getElementById('page-title').textContent = pName;
-            document.title = pName + ' - エントリーリスト';
+            const pName = await dbGet(`projects/${projectId}/publicSettings/projectName`);
+            document.getElementById('page-title').textContent = pName || 'エントリーリスト';
+            document.title = (pName || 'エントリーリスト') + ' - エントリーリスト';
         } catch(e) {
             document.getElementById('page-title').textContent = 'エントリーリスト';
         }
@@ -23,30 +24,20 @@ const params = new URLSearchParams(location.search);
         document.getElementById('disabled-msg').style.display = 'none';
         document.getElementById('content-area').style.display = 'block';
         loadList();
+
+        // 10秒ごとに自動更新（WebSocket .on() の代替）
+        setInterval(loadList, 10000);
     }
 
-    let listRef = null;
-    let listListener = null;
+    async function loadList() {
+        const body = document.getElementById('list-body');
 
-    function unsubscribeList() {
-        if (listRef && listListener) {
-            listRef.off('value', listListener);
-            listListener = null;
-        }
-    }
-
-    function loadList() {
-        if (listListener) return; // 既に接続済み
-
-        listRef = db.ref(`projects/${projectId}/entries`);
-        listListener = listRef.on('value', snap => {
-            const body = document.getElementById('list-body');
+        try {
+            const data = await dbGet(`projects/${projectId}/entries`);
             body.innerHTML = '';
             let count = 0;
 
-            if (snap.exists()) {
-                const data = snap.val();
-                
+            if (data) {
                 // 配列化してソート (エントリー番号順)
                 const entries = Object.values(data).filter(e => e.status !== 'canceled');
                 entries.sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
@@ -79,7 +70,9 @@ const params = new URLSearchParams(location.search);
                 body.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#888;">まだエントリーはありません。</td></tr>';
             }
             document.getElementById('total-count').textContent = count;
-        });
+        } catch (e) {
+            console.error('リスト取得エラー:', e);
+        }
     }
 
     init();

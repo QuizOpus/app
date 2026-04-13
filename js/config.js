@@ -10,11 +10,12 @@ const firebaseConfig = {
   databaseURL: "https://quziopus-default-rtdb.asia-southeast1.firebasedatabase.app/"
 };
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+// Firebase SDK初期化 (SDKが読み込まれているページのみ実行。admin.htmlはStorage利用のため読み込む)
+if (typeof firebase !== 'undefined') {
+  firebase.initializeApp(firebaseConfig);
+}
 
 // システム共通のGAS連携URL（メール送信API）
-// ここにデプロイしたGASのURLを貼り付けます
 const SYSTEM_GAS_URL = "https://script.google.com/macros/s/AKfycbzCWmgdMJ_a2-oMs08lGu30XBiKhNQrbBFT8mBP2HxuX_g_hnLfk3BQbfMfH-A17eVi/exec";
 
 // セッション管理ヘルパー（localStorageベースに統一）
@@ -26,4 +27,3 @@ const session = {
   get scorerName() { return this.get('scorer_name'); },
   get scorerRole() { return this.get('scorer_role'); }
 };
-

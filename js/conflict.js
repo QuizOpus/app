@@ -1,3 +1,5 @@
+// conflict.js — コンフリクト解消（REST + ポーリング版・WebSocket接続ゼロ）
+
 const auth = requireAuth({ requireAdmin: true });
 if (!auth) throw new Error('auth');
 const { projectId, secretHash } = auth;
@@ -12,24 +14,29 @@ const { projectId, secretHash } = auth;
         let totalQuestions = 100;
 
         async function init() {
-
-            // 独立した3つのクエリを並列実行
-            const [configSnap, , answersTextSnap] = await Promise.all([
-                db.ref(`projects/${projectId}/protected/${secretHash}/config`).once('value'),
-                fetch(`${FIREBASE_REST_BASE}/projects/${projectId}/protected/${secretHash}/answers.json?shallow=true`)
-                    .then(r => r.json())
-                    .then(data => { if (data) entryNumbers = Object.keys(data).map(Number).sort((a, b) => a - b); })
-                    .catch(e => console.error('答案キー取得エラー:', e)),
-                db.ref(`projects/${projectId}/protected/${secretHash}/answers_text`).get()
+            // 独立した3つのクエリを並列実行 (REST)
+            const [config, shallowData, answersTextData] = await Promise.all([
+                dbGet(`projects/${projectId}/protected/${secretHash}/config`),
+                dbShallow(`projects/${projectId}/protected/${secretHash}/answers`).catch(e => { console.error('答案キー取得エラー:', e); return null; }),
+                dbGet(`projects/${projectId}/protected/${secretHash}/answers_text`)
             ]);
 
-            if (configSnap.exists()) totalQuestions = configSnap.val().questionCount || 100;
-            if (answersTextSnap.exists()) answersText = answersTextSnap.val();
+            if (config) totalQuestions = config.questionCount || 100;
+            if (shallowData) entryNumbers = Object.keys(shallowData).map(Number).sort((a, b) => a - b);
+            if (answersTextData) answersText = answersTextData;
 
-            db.ref(`projects/${projectId}/protected/${secretHash}/scores`).on('value', snap => {
-                scoresData = snap.val() || {};
-                render();
-            });
+            // ポーリングでスコアを定期取得（WebSocket .on() の代替）
+            const scorePoller = new Poller(
+                `projects/${projectId}/protected/${secretHash}/scores`,
+                (data) => {
+                    scoresData = data || {};
+                    render();
+                },
+                3000
+            );
+            IdleManager.register(scorePoller);
+            scorePoller.start();
+            IdleManager.init();
         }
 
         function render() {
@@ -53,12 +60,14 @@ const { projectId, secretHash } = auth;
                 });
             }
 
-            // 画像の必要部分だけダイナミックに一括取得
+            // 画像の必要部分だけダイナミックに一括取得 (REST)
             const promises = conflicts.map(async c => {
                 if (!answersData[c.entryNum]) answersData[c.entryNum] = { cells: {} };
                 if (answersData[c.entryNum].cells[`q${c.q}`] === undefined) {
-                    const snap = await db.ref(`projects/${projectId}/protected/${secretHash}/answers/${c.entryNum}/cells/q${c.q}`).get();
-                    answersData[c.entryNum].cells[`q${c.q}`] = snap.val() || null;
+                    // Storage URL 優先、旧 Base64 フォールバック
+                    const ansData = await dbGet(`projects/${projectId}/protected/${secretHash}/answers/${c.entryNum}`);
+                    const cellUrl = ansData?.cellUrls?.[`q${c.q}`] || ansData?.cells?.[`q${c.q}`] || null;
+                    answersData[c.entryNum].cells[`q${c.q}`] = cellUrl;
                 }
             });
             Promise.all(promises).then(() => {
@@ -119,7 +128,7 @@ const { projectId, secretHash } = auth;
         }
 
         async function setFinal(q, entryNum, result) {
-            await db.ref(`projects/${projectId}/protected/${secretHash}/scores/__final__q${q}/${entryNum}`).set(result);
+            await dbSet(`projects/${projectId}/protected/${secretHash}/scores/__final__q${q}/${entryNum}`, result);
         }
 
         function selectConflictCard(idx) {

@@ -1,3 +1,6 @@
+// entry.js — エントリーフォーム（完全REST版・WebSocket接続ゼロ）
+// 受付番号の採番には ETag トランザクションを使用し、競合を完全に防止する。
+
 const params = new URLSearchParams(location.search);
         const projectId = params.get('pid');
 
@@ -54,25 +57,25 @@ const params = new URLSearchParams(location.search);
             const pw = generatePW();
 
             try {
-                // トランザクションで受付番号を取得 (公開設定配下)
-                const counterRef = db.ref(`projects/${projectId}/publicSettings/lastEntryNumber`);
-                const { committed, snapshot } = await counterRef.transaction((currentValue) => {
-                    return (currentValue || 0) + 1;
-                });
+                // ETag トランザクションで受付番号をアトミックに取得
+                const txResult = await dbTransaction(
+                    `projects/${projectId}/publicSettings/lastEntryNumber`,
+                    (currentValue) => (currentValue || 0) + 1
+                );
 
-                if (!committed) {
+                if (!txResult.committed) {
                     throw new Error("受付番号の取得に失敗しました。再度お試しください。");
                 }
 
-                const entryNumber = snapshot.val();
+                const entryNumber = txResult.value;
                 const pwHash = await AppCrypto.hashPassword(pw);
 
                 // 公開鍵を取得してPIIを暗号化
-                const pubSnap = await db.ref(`projects/${projectId}/publicSettings/publicKey`).once('value');
-                if (!pubSnap.exists()) throw new Error("セキュリティキーが取得できません");
+                const publicKeyJwk = await dbGet(`projects/${projectId}/publicSettings/publicKey`);
+                if (!publicKeyJwk) throw new Error("セキュリティキーが取得できません");
                 
                 const piiData = { email, familyName, firstName, familyNameKana, firstNameKana, affiliation, grade, entryName, message, inquiry };
-                const encryptedPII = await AppCrypto.encryptRSA(JSON.stringify(piiData), pubSnap.val());
+                const encryptedPII = await AppCrypto.encryptRSA(JSON.stringify(piiData), publicKeyJwk);
 
                 const entryData = {
                     uuid,
@@ -81,11 +84,11 @@ const params = new URLSearchParams(location.search);
                     disclosurePw: pwHash,
                     status: 'registered',
                     checkedIn: false,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                    timestamp: SERVER_TIMESTAMP
                 };
 
-                // DBに保存
-                await db.ref(`projects/${projectId}/entries/${uuid}`).set(entryData);
+                // DBに保存 (REST)
+                await dbSet(`projects/${projectId}/entries/${uuid}`, entryData);
 
                 // GAS APIを呼び出してメール送信
                 if (typeof SYSTEM_GAS_URL !== 'undefined' && SYSTEM_GAS_URL.startsWith('http')) {
@@ -129,10 +132,9 @@ const params = new URLSearchParams(location.search);
             if (!projectId) return;
 
             try {
-                // プロジェクト名を取得して表示
-                const snap = await db.ref(`projects/${projectId}/publicSettings`).once('value');
-                if (snap.exists()) {
-                    const settings = snap.val();
+                // プロジェクト名を取得して表示 (REST)
+                const settings = await dbGet(`projects/${projectId}/publicSettings`);
+                if (settings) {
                     const pName = settings.projectName || 'エントリーフォーム';
                     document.getElementById('project-title').textContent = pName;
                     document.title = pName + ' - エントリーフォーム';

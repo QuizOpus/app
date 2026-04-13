@@ -1,3 +1,4 @@
+// index.js — ログイン / プロジェクト作成（完全REST版・WebSocket接続ゼロ）
 
 function generateStrongPassword() {
 	const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -22,7 +23,6 @@ function setTab(tab) {
 	currentTab = tab;
 	document.getElementById('tab-join').className = tab === 'join' ? 'tab active' : 'tab';
 	document.getElementById('tab-create').className = tab === 'create' ? 'tab active' : 'tab';
-	
 	
 
 	document.getElementById('section-join').hidden = tab !== 'join';
@@ -80,16 +80,15 @@ async function joinProject() {
 	btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> 認証中...';
 
 	try {
-		// まず公開設定が存在するか確認する
-		const snapPub = await db.ref(`projects/${pid}/publicSettings`).once('value');
-		if (!snapPub.exists()) {
+		// まず公開設定が存在するか確認する (REST)
+		const pubSettings = await dbGet(`projects/${pid}/publicSettings`);
+		if (!pubSettings) {
 			// 旧バージョンとの互換性チェック
-			const snapOld = await db.ref(`projects/${pid}/settings`).once('value');
-			if (snapOld.exists()) {
+			const oldSettings = await dbGet(`projects/${pid}/settings`);
+			if (oldSettings) {
 				// 旧システムのログイン
-				const settings = snapOld.val();
 				const pwdHash = await AppCrypto.hashPassword(pwd);
-				if (settings.passwordHash ? settings.passwordHash !== pwdHash : settings.password !== pwd) {
+				if (oldSettings.passwordHash ? oldSettings.passwordHash !== pwdHash : oldSettings.password !== pwd) {
 					throw new Error('パスワードが間違っています。');
 				}
 				session.set('projectId', pid);
@@ -104,9 +103,8 @@ async function joinProject() {
 		// 新バージョンのログイン判定 (入力されたパスワードのハッシュで探る)
 		const hash = await AppCrypto.hashPassword(pwd);
 
-		const snapCheck = await db.ref(`projects/${pid}/protected/${hash}/settings`).once('value');
-		if (snapCheck.exists()) {
-			const configData = snapCheck.val();
+		const configData = await dbGet(`projects/${pid}/protected/${hash}/settings`);
+		if (configData) {
 			if (configData.role === 'scorer') {
 				// Scorer login
 				session.set('projectId', pid);
@@ -171,16 +169,15 @@ async function createProject() {
 		// 秘密鍵を管理者パスワードでAES暗号化
 		const encryptedPriv = await AppCrypto.encryptAES(JSON.stringify(privateKeyJwk), adminPwd);
 
-		// DB保存 (個別の権限エリアに対するマルチパスアップデートでPERMISSION_DENIEDを回避)
+		// DB保存 (REST multi-path update)
 		const updates = {};
 		updates[`publicSettings`] = {
 			projectName: pName,
 			publicKey: publicKeyJwk
 		};
-		// entriesは空なので初期化不要
 		updates[`protected/${scorerHash}/settings`] = {
 			role: 'scorer',
-			createdAt: firebase.database.ServerValue.TIMESTAMP
+			createdAt: SERVER_TIMESTAMP
 		};
 		updates[`protected/${adminHash}/settings`] = {
 			adminCreator: name,
@@ -188,7 +185,7 @@ async function createProject() {
 			encryptedPrivateKey: encryptedPriv
 		};
 
-		await db.ref(`projects/${pid}`).update(updates);
+		await dbUpdate(`projects/${pid}`, updates);
 
 		// セッションセットアップ
 		session.set('projectId', pid);
@@ -251,7 +248,7 @@ async function importProject() {
 			config: data.config || {},
 			entryConfig: data.entryConfig || {},
 			disclosure: data.disclosure || {},
-			settings: { role: 'scorer', createdAt: firebase.database.ServerValue.TIMESTAMP }
+			settings: { role: 'scorer', createdAt: SERVER_TIMESTAMP }
 		};
 		
 		updates[`protected/${adminHash}/settings`] = {
@@ -260,7 +257,7 @@ async function importProject() {
 			encryptedPrivateKey: encryptedPriv
 		};
 
-		await db.ref(`projects/${pid}`).update(updates);
+		await dbUpdate(`projects/${pid}`, updates);
 
 		session.set('projectId', pid);
 		session.set('scorer_name', name);

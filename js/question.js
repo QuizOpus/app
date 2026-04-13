@@ -1,3 +1,6 @@
+// question.js — 採点画面（REST + ポーリング版・WebSocket接続ゼロ）
+// ETag トランザクションによる採点者ロック（4人目滑り込み防止）
+// 楽観的UI更新（ポーリングの空白中もサクサク操作可能）
 
 const auth = requireAuth();
 const { projectId, secretHash, scorerName } = auth || {};
@@ -11,46 +14,87 @@ const currentQ = parseInt(localStorage.getItem('current_q') || '1');
         let entryNumbers = [];
         let isCompleted = false;
         let selectedIndex = 0;
+        // 楽観的UI更新: 自分が送信した変更をポーリング到着まで保護するバッファ
+        let pendingWrites = {};
 
         async function init() {
-            // 模範解答と答案キーを並列取得
-            const [answerSnap] = await Promise.all([
-                db.ref(`projects/${projectId}/protected/${secretHash}/answers_text/${currentQ}`).get(),
-                fetch(`${FIREBASE_REST_BASE}/projects/${projectId}/protected/${secretHash}/answers.json?shallow=true`)
-                    .then(r => r.json())
-                    .then(data => { if (data) entryNumbers = Object.keys(data).map(Number).sort((a, b) => a - b); })
-                    .catch(e => console.error('答案キー取得エラー:', e))
+            // 模範解答と答案キーを並列取得 (REST)
+            const [answerText, shallowData] = await Promise.all([
+                dbGet(`projects/${projectId}/protected/${secretHash}/answers_text/${currentQ}`),
+                dbShallow(`projects/${projectId}/protected/${secretHash}/answers`)
             ]);
-            const answerText = answerSnap.exists() ? answerSnap.val() : '未設定';
-            document.getElementById('answer-badge').textContent = answerText;
+            document.getElementById('answer-badge').textContent = answerText || '未設定';
+
+            if (shallowData) {
+                entryNumbers = Object.keys(shallowData).map(Number).sort((a, b) => a - b);
+            }
 
             if (entryNumbers.length === 0) {
                 document.getElementById('answer-grid').innerHTML = '<div class="loading-state" style="grid-column:1/-1"><i class="fa-solid fa-inbox"></i> 答案データがありません</div>';
                 return;
             }
 
-            // 現在の設問の画像のみを並列取得 (100倍高速化)
+            // 現在の設問の画像のみを並列取得 (REST)
             const fetchPromises = entryNumbers.map(async (entryNum) => {
-                const imgSnap = await db.ref(`projects/${projectId}/protected/${secretHash}/answers/${entryNum}/cells/q${currentQ}`).get();
+                // Storage URL 優先、旧 Base64 フォールバック
+                const cellData = await dbGet(`projects/${projectId}/protected/${secretHash}/answers/${entryNum}`);
                 if (!answers[entryNum]) answers[entryNum] = { cells: {} };
-                answers[entryNum].cells[`q${currentQ}`] = imgSnap.val();
+                const cellUrl = cellData?.cellUrls?.[`q${currentQ}`] || cellData?.cells?.[`q${currentQ}`];
+                answers[entryNum].cells[`q${currentQ}`] = cellUrl;
             });
             await Promise.all(fetchPromises);
 
-            // 採点者として登録
-            await db.ref(`projects/${projectId}/protected/${secretHash}/scores/__scorers__q${currentQ}/${scorerName}`).set(true);
+            // ETag トランザクションで採点者として登録（4人目防止）
+            try {
+                await dbTransaction(
+                    `projects/${projectId}/protected/${secretHash}/scores/__scorers__q${currentQ}`,
+                    (current) => {
+                        const scorers = current || {};
+                        const names = Object.keys(scorers);
+                        if (names.includes(scorerName)) return { ...scorers }; // 既に登録済み
+                        if (names.length >= 3) return undefined; // 満員 → 中止
+                        return { ...scorers, [scorerName]: true };
+                    }
+                );
+            } catch (e) {
+                if (e.message.includes('中止') || e.message.includes('リトライ')) {
+                    showToast('すれ違いで満員になりました。問題一覧に戻ります。', 'error', 3000);
+                    setTimeout(() => location.href = 'judge.html', 2000);
+                    return;
+                }
+                throw e;
+            }
 
-            // スコアのリアルタイム監視
-            db.ref(`projects/${projectId}/protected/${secretHash}/scores`).on('value', snap => {
-                const allScores = snap.val() || {};
-                myScores = {};
-                entryNumbers.forEach(entryNum => {
-                    myScores[entryNum] = allScores[entryNum]?.[`q${currentQ}`]?.[scorerName] || null;
-                });
-                isCompleted = allScores[`__completed__q${currentQ}`]?.[scorerName] === true;
-                renderGrid();
-                checkAutoCompletion();
-            });
+            // ポーリングでスコアを定期取得（WebSocket .on() の代替）
+            const scorePoller = new Poller(
+                `projects/${projectId}/protected/${secretHash}/scores`,
+                (allScores) => {
+                    allScores = allScores || {};
+                    myScores = {};
+                    entryNumbers.forEach(entryNum => {
+                        // 楽観的更新バッファを優先
+                        if (pendingWrites[entryNum] !== undefined) {
+                            myScores[entryNum] = pendingWrites[entryNum];
+                        } else {
+                            myScores[entryNum] = allScores[entryNum]?.[`q${currentQ}`]?.[scorerName] || null;
+                        }
+                    });
+                    // サーバーからの値が到着したらバッファをクリア
+                    for (const en of Object.keys(pendingWrites)) {
+                        const serverVal = allScores[en]?.[`q${currentQ}`]?.[scorerName];
+                        if (serverVal === pendingWrites[en]) {
+                            delete pendingWrites[en];
+                        }
+                    }
+                    isCompleted = allScores[`__completed__q${currentQ}`]?.[scorerName] === true;
+                    renderGrid();
+                    checkAutoCompletion(allScores);
+                },
+                3000
+            );
+            IdleManager.register(scorePoller);
+            scorePoller.start();
+            IdleManager.init();
         }
 
         function renderGrid() {
@@ -64,7 +108,7 @@ const currentQ = parseInt(localStorage.getItem('current_q') || '1');
             let masterData = getMasterData(projectId);
 
             // DOMを毎度作り直すと画像がチラつくため、既に要素があればクラスのみ更新
-            if (grid.children.length === entryNumbers.length && grid.children[0].className.includes('answer-card')) {
+            if (grid.children.length === entryNumbers.length && grid.children[0]?.className?.includes('answer-card')) {
                 entryNumbers.forEach((entryNum, idx) => {
                     const myScore = myScores[entryNum];
                     const card = grid.children[idx];
@@ -93,7 +137,17 @@ const currentQ = parseInt(localStorage.getItem('current_q') || '1');
         }
 
         function mark(entryNum, result) {
-            db.ref(`projects/${projectId}/protected/${secretHash}/scores/${entryNum}/q${currentQ}/${scorerName}`).set(result);
+            // 楽観的UI更新: 即座にローカル反映
+            pendingWrites[entryNum] = result;
+            myScores[entryNum] = result;
+            renderGrid();
+            // バックグラウンドでサーバーに書き込み (REST)
+            dbSet(`projects/${projectId}/protected/${secretHash}/scores/${entryNum}/q${currentQ}/${scorerName}`, result)
+                .catch(e => {
+                    console.error('スコア書き込みエラー:', e);
+                    delete pendingWrites[entryNum];
+                    showToast('採点の保存に失敗しました', 'error');
+                });
         }
 
         function selectCard(idx) {
@@ -128,22 +182,19 @@ const currentQ = parseInt(localStorage.getItem('current_q') || '1');
             const entryNum = entryNumbers[selectedIndex];
             
             // UI visual feedback
-            const card = Object.values(document.querySelectorAll('.answer-card')).find(el => {
-                const badge = el.querySelector('.entry-num');
-                return badge && badge.textContent === entryNum;
-            });
-            
+            const cards = document.querySelectorAll('.answer-card');
+            const card = cards[selectedIndex];
             if (card) {
                 card.style.transform = 'scale(1.05)';
                 setTimeout(() => card.style.transform = 'scale(1)', 150);
             }
 
-            db.ref(`projects/${projectId}/protected/${secretHash}/scores/${entryNum}/q${currentQ}/${scorerName}`).set(status);
+            mark(entryNum, status);
 
             // 最後の回答でなければ自動で次の回答へ移動
             if (selectedIndex < entryNumbers.length - 1) {
                 selectedIndex++;
-                updateSelection();
+                selectCard(selectedIndex);
             }
         };
 
@@ -187,7 +238,7 @@ document.addEventListener('keydown', (e) => {
             }
         });
 
-        async function checkAutoCompletion() {
+        async function checkAutoCompletion(allScores) {
             const total = entryNumbers.length;
             const done = entryNumbers.filter(n => myScores[n] !== null).length;
             const allDone = done === total && total > 0;
@@ -196,10 +247,12 @@ document.addEventListener('keydown', (e) => {
 
             if (allDone && !isCompleted) {
                 isCompleted = true; // 重複実行ブロック
-                await db.ref(`projects/${projectId}/protected/${secretHash}/scores/__completed__q${currentQ}/${scorerName}`).set(true);
+                await dbSet(`projects/${projectId}/protected/${secretHash}/scores/__completed__q${currentQ}/${scorerName}`, true);
 
-                const snap = await db.ref(`projects/${projectId}/protected/${secretHash}/scores`).get();
-                await checkAutoConfirm(snap.val() || {}, currentQ);
+                if (!allScores) {
+                    allScores = await dbGet(`projects/${projectId}/protected/${secretHash}/scores`) || {};
+                }
+                await checkAutoConfirm(allScores, currentQ);
                 
                 location.href = 'judge.html';
             }
@@ -235,7 +288,7 @@ document.addEventListener('keydown', (e) => {
             }
 
             if (allAgree) {
-                await db.ref(`projects/${projectId}/protected/${secretHash}/scores/__final__q${q}`).set(finals);
+                await dbSet(`projects/${projectId}/protected/${secretHash}/scores/__final__q${q}`, finals);
             }
         }
 

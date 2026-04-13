@@ -1,3 +1,5 @@
+// cancel.js — キャンセル処理（完全REST版・WebSocket接続ゼロ）
+
 const params = new URLSearchParams(location.search);
     let projectId = params.get('pid');
 
@@ -10,10 +12,9 @@ const params = new URLSearchParams(location.search);
     (async () => {
         if (!projectId) return;
         try {
-            const snap = await db.ref(`projects/${projectId}/publicSettings/projectName`).once('value');
-            const pName = snap.exists() ? snap.val() : 'キャンセルフォーム';
-            document.getElementById('cancel-title').textContent = pName;
-            document.title = pName + ' - キャンセルフォーム';
+            const pName = await dbGet(`projects/${projectId}/publicSettings/projectName`);
+            document.getElementById('cancel-title').textContent = pName || 'キャンセルフォーム';
+            document.title = (pName || 'キャンセルフォーム') + ' - キャンセルフォーム';
         } catch(e) {
             document.getElementById('cancel-title').textContent = 'キャンセルフォーム';
         }
@@ -44,11 +45,10 @@ const params = new URLSearchParams(location.search);
         showStatus('データを確認しています...', '');
 
         try {
-            // 受付番号で検索
-            const snap = await db.ref(`projects/${projectId}/entries`)
-                .orderByChild('entryNumber').equalTo(entryNum).once('value');
+            // 受付番号で検索 (REST query)
+            const entriesData = await dbQuery(`projects/${projectId}/entries`, 'entryNumber', entryNum);
 
-            if (!snap.exists()) {
+            if (!entriesData || Object.keys(entriesData).length === 0) {
                 showStatus('指定された受付番号が見つかりません。', 'error');
                 btn.disabled = false; btn.textContent = 'キャンセルを確定する';
                 return;
@@ -60,14 +60,13 @@ const params = new URLSearchParams(location.search);
 
             const pwHash = await AppCrypto.hashPassword(pw);
 
-            snap.forEach(child => {
-                const data = child.val();
+            for (const [key, data] of Object.entries(entriesData)) {
                 if (data.email === email && (data.disclosurePw === pwHash || data.disclosurePw === pw)) {
-                    targetKey = child.key;
+                    targetKey = key;
                     targetData = data;
                     matched = true;
                 }
-            });
+            }
 
             if (!matched) {
                 showStatus('メールアドレスまたはパスワードが正しくありません。', 'error');
@@ -81,10 +80,10 @@ const params = new URLSearchParams(location.search);
                 return;
             }
 
-            // 更新処理
-            await db.ref(`projects/${projectId}/entries/${targetKey}`).update({
+            // 更新処理 (REST)
+            await dbUpdate(`projects/${projectId}/entries/${targetKey}`, {
                 status: 'canceled',
-                canceledAt: firebase.database.ServerValue.TIMESTAMP
+                canceledAt: SERVER_TIMESTAMP
             });
 
             document.getElementById('form-card').innerHTML = `

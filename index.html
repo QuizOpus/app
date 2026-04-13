@@ -285,17 +285,17 @@
       <p class="success-desc">以下の情報をコピーして安全な場所に保存してください。<br>（マスターパスワードは絶対に他人へ共有しないでください）</p>
       
       <div class="credential-panel">
+        <label><i class="fa-solid fa-fingerprint"></i> プロジェクトID</label>
+        <div class="credential-row">
+          <input type="text" id="success-id" readonly />
+          <button class="btn standard" onclick="copyToClipboard('success-id', this)">コピー</button>
+        </div>
         <label><i class="fa-solid fa-crown crown-icon"></i> 管理者用 マスターパスワード (コピーして大切に保管)</label>
         <div class="credential-row">
           <input type="text" id="success-admin-pwd" readonly />
           <button class="btn master" onclick="copyToClipboard('success-admin-pwd', this)">コピー</button>
         </div>
-        <label>参加ID (URLの一部になります)</label>
-        <div class="credential-row">
-          <input type="text" id="success-id" readonly />
-          <button class="btn standard" onclick="copyToClipboard('success-id', this)">コピー</button>
-        </div>
-        <label>採点者用 アクセスコード</label>
+        <label><i class="fa-solid fa-users"></i> 採点者用 アクセスコード</label>
         <div class="credential-row">
           <input type="text" id="success-pwd" readonly />
           <button class="btn standard" onclick="copyToClipboard('success-pwd', this)">コピー</button>

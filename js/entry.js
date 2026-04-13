@@ -78,8 +78,10 @@ const params = new URLSearchParams(location.search);
                 // 公開鍵を取得してPIIを暗号化
                 const publicKeyJwk = await dbGet(`projects/${projectId}/publicSettings/publicKey`);
                 if (!publicKeyJwk) throw new Error("セキュリティキーが取得できません");
+                const useEntryNameNode = document.getElementById('f-use-entry-name');
+                const useEntryName = useEntryNameNode ? useEntryNameNode.checked : false;
                 
-                const piiData = { email, familyName, firstName, familyNameKana, firstNameKana, affiliation, grade, entryName, message, inquiry };
+                const piiData = { email, familyName, firstName, familyNameKana, firstNameKana, affiliation, grade, entryName, useEntryName, message, inquiry };
                 const encryptedPII = await AppCrypto.encryptRSA(JSON.stringify(piiData), publicKeyJwk);
 
                 const entryData = {
@@ -151,6 +153,31 @@ const params = new URLSearchParams(location.search);
                         document.getElementById('f-grade').removeAttribute('required');
                         document.getElementById('open-mode-fields').style.display = 'block';
                         document.getElementById('f-prefecture').setAttribute('required', 'required');
+                    }
+
+                    // 参加規約とエントリーネーム設定
+                    if (settings.terms) {
+                        const tosArea = document.getElementById('tos-text');
+                        if (tosArea) {
+                            tosArea.innerHTML = `私は<a href="terms.html?pid=${projectId}" target="_blank" style="color:#60a5fa;text-decoration:underline">参加規約</a>および<a href="legal.html" target="_blank" style="color:#60a5fa;text-decoration:underline">プライバシーポリシー</a>に同意し、入力した情報が正確であることを確認しました。`;
+                        }
+                    }
+
+                    const prefArea = document.getElementById('entry-name-pref-area');
+                    if (prefArea) {
+                        if (settings.allowEntryNameForParticipation) {
+                            prefArea.innerHTML = `
+                                <label class="custom-checkbox">
+                                    <input type="checkbox" id="f-use-entry-name">
+                                    <span class="checkbox-mark"><svg class="checkbox-svg" viewBox="0 0 16 16"><path d="M3 8.5L6.5 12L13 4"></path></svg></span>
+                                    <span>大会当日のスコアボードや呼称にもエントリーネームを使用する</span>
+                                </label>
+                            `;
+                        } else {
+                            prefArea.innerHTML = `
+                                <div style="font-size:12px;color:#94a3b8;line-height:1.4;"><i class="fa-solid fa-circle-info"></i> システム上の登録用です。大会当日は本名（姓名）でのご参加・表示となります。</div>
+                            `;
+                        }
                     }
 
                     // エントリー受付チェック

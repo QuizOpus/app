@@ -169,6 +169,9 @@
                 <div class="form-group">
                     <label class="required"><i class="fa-solid fa-id-badge"></i> エントリーネーム</label>
                     <input type="text" id="f-entry-name" required placeholder="エントリーシートでの表示名">
+                    <div id="entry-name-pref-area" style="margin-top:10px;">
+                        <!-- JSで動的に注意書きまたはチェックボックスを挿入 -->
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -184,10 +187,12 @@
                 <div class="form-group" style="margin-top: 24px;">
                     <label class="custom-checkbox">
                         <input type="checkbox" id="f-tos" required>
-                        <span class="checkbox-mark"><i class="fa-solid fa-check"></i></span>
-                        <span>私は大会の参加規約および<a href="legal.html" target="_blank" style="color:#60a5fa;text-decoration:underline">プライバシーポリシー・利用規約</a>に同意し、入力した情報が正確であることを確認しました。<br>
-                            <span style="color:#f87171;font-size:12px"><i class="fa-solid fa-circle-exclamation"></i>
-                                受付コードはメールで送信されます。メール受信に同意の上、受信可能なアドレスであることを必ず確認してください。</span></span>
+                        <span class="checkbox-mark"><svg class="checkbox-svg" viewBox="0 0 16 16"><path d="M3 8.5L6.5 12L13 4"></path></svg></span>
+                        <div style="flex:1">
+                            <span id="tos-text">私は<a href="legal.html" target="_blank" style="color:#60a5fa;text-decoration:underline">プライバシーポリシー・利用規約</a>に同意し、入力した情報が正確であることを確認しました。</span><br>
+                            <span style="color:#f87171;font-size:12px;display:block;margin-top:4px;"><i class="fa-solid fa-circle-exclamation"></i>
+                                受付コードはメールで送信されます。受信可能なアドレスであることを必ず確認してください。</span>
+                        </div>
                     </label>
                 </div>
 

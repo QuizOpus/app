@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>参加規約 - QuizOpus</title>
+    <!-- Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/design_system.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        .terms-container {
+            max-width: 800px;
+            margin: 60px auto;
+            padding: 40px;
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9));
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            line-height: 1.8;
+            font-family: var(--font-family);
+        }
+
+        .terms-container h1 {
+            font-size: 24px;
+            margin-bottom: 24px;
+            color: white;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 12px;
+        }
+
+        .terms-container h2 {
+            font-size: 20px;
+            margin-top: 32px;
+            margin-bottom: 16px;
+            color: var(--primary);
+        }
+
+        .terms-container h3 {
+            font-size: 16px;
+            margin-top: 24px;
+            margin-bottom: 12px;
+            color: #e2e8f0;
+        }
+
+        .terms-container p {
+            margin-bottom: 1em;
+            color: var(--text-muted);
+        }
+
+        .terms-container ul,
+        .terms-container ol {
+            margin-bottom: 1em;
+            padding-left: 24px;
+            color: var(--text-muted);
+        }
+
+        .terms-container li {
+            margin-bottom: 8px;
+        }
+
+        .terms-container a {
+            color: var(--primary);
+            text-decoration: underline;
+        }
+
+        .loading {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 40px;
+        }
+    </style>
+</head>
+
+<body class="theme-dark">
+    <!-- Header -->
+    <header class="app-header">
+        <div class="logo">
+            <i class="fa-solid fa-layer-group"></i>
+            <span>QuizOpus</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="terms-container" id="terms-content">
+            <div class="loading"><i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+                <p style="margin-top:16px;">読み込み中...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Configuration & REST Client -->
+    <script src="js/config.js"></script>
+    <script src="js/shared.js"></script>
+    <script>
+        async function loadTerms() {
+            const params = new URLSearchParams(location.search);
+            const projectId = params.get('pid');
+            const container = document.getElementById('terms-content');
+
+            if (!projectId) {
+                container.innerHTML = '<h2>エラー</h2><p>プロジェクトIDが指定されていません。</p>';
+                return;
+            }
+
+            try {
+                const settings = await dbGet(`projects/${projectId}/publicSettings`);
+                const terms = settings?.terms;
+
+                // Show Project Name in header if available
+                if (settings && settings.projectName) {
+                    const headerLogo = document.querySelector('.logo span');
+                    if (headerLogo) headerLogo.textContent = settings.projectName;
+                    document.title = `参加規約 - ${settings.projectName}`;
+                }
+
+                if (terms) {
+                    // XSS対策としてDOMPurifyなどがあるとなお良いが、運営のプレーンテキストを想定
+                    container.innerHTML = marked.parse(terms);
+                } else {
+                    container.innerHTML = '<h2>参加規約</h2><p>現在、参加規約は設定されていません。</p>';
+                }
+            } catch (err) {
+                container.innerHTML = '<h2>読み込みエラー</h2><p>参加規約の取得に失敗しました。通信環境をご確認の上、再度お試しください。</p>';
+                console.error(err);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', loadTerms);
+    </script>
+</body>
+
+</html>

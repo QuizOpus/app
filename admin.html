@@ -487,8 +487,18 @@
                     <button class="btn" style="width:auto;padding:10px 20px;" onclick="updateProjectName()"><i class="fa-solid fa-arrows-rotate"></i> 更新</button>
                 </div>
             </div>
+            
+            <div class="section glass-panel">
+                <h2><i class="fa-solid fa-scroll"></i> 参加規約</h2>
+                <p class="desc-text" style="margin-bottom:12px;">大会の参加規約を入力します。設定するとエントリーフォームに同意チェックボックスが表示されます。（Markdown/テキスト）</p>
+                <div class="name-input-flex" style="flex-direction:column; align-items:stretch;">
+                    <textarea id="setting-terms" placeholder="規約を入力しない場合は空にしてください" style="min-height:120px;margin-bottom:12px;"></textarea>
+                    <button class="btn" style="width:100%;" onclick="updateTerms()"><i class="fa-solid fa-arrows-rotate"></i> 参加規約を更新</button>
+                </div>
+            </div>
             <div class="section glass-panel">
                 <h2><i class="fa-solid fa-earth-asia"></i> 大会形式</h2>
+                
                 <div class="config-panel config-row">
                     <label class="toggle-switch"><input type="checkbox" id="full-open-toggle" onchange="toggleFullOpen()"><span class="toggle-slider"></span></label>
                     <div class="toggle-info">
@@ -496,6 +506,15 @@
                         <div class="toggle-info-desc">ONにすると、エントリーフォームの「所属教育機関・学年」が「都道府県」に変わります</div>
                     </div>
                     <span id="full-open-status" class="status-badge status-closed">学校限定</span>
+                </div>
+
+                <div class="config-panel config-row mt-md">
+                    <label class="toggle-switch"><input type="checkbox" id="allow-entry-name-toggle" onchange="toggleAllowEntryName()"><span class="toggle-slider"></span></label>
+                    <div class="toggle-info">
+                        <div class="toggle-info-title">本戦でのエントリーネーム使用制限</div>
+                        <div class="toggle-info-desc">許可しない場合、当日システム上での本名表示が告知されます</div>
+                    </div>
+                    <span id="allow-entry-name-status" class="status-badge status-closed">本名のみ</span>
                 </div>
             </div>
             <div class="section glass-panel">

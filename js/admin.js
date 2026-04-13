@@ -161,12 +161,21 @@
                 updateEntryOpenStatus();
             }
 
-            // フルオープン大会モードの読み込み
-            const fullOpenFlag = await dbGet(`projects/${projectId}/publicSettings/fullOpen`);
-            if (fullOpenFlag) {
+            // publicSettings の一括読み込み（フルオープン、規約、エントリーネーム使用設定）
+            const publicSettings = await dbGet(`projects/${projectId}/publicSettings`) || {};
+            
+            if (publicSettings.fullOpen) {
                 document.getElementById('full-open-toggle').checked = true;
                 document.getElementById('full-open-status').textContent = 'フルオープン';
                 document.getElementById('full-open-status').className = 'status-badge status-open';
+            }
+            if (publicSettings.terms) {
+                document.getElementById('setting-terms').value = publicSettings.terms;
+            }
+            if (publicSettings.allowEntryNameForParticipation) {
+                document.getElementById('allow-entry-name-toggle').checked = true;
+                document.getElementById('allow-entry-name-status').textContent = '許可';
+                document.getElementById('allow-entry-name-status').className = 'status-badge status-open';
             }
 
             document.getElementById('stat-total').textContent = totalQuestions;
@@ -976,6 +985,27 @@
                 badge.textContent = '学校限定';
                 badge.className = 'status-badge status-closed';
                 showAdminToast('学校限定モードに切り替えました', 'success');
+            }
+        }
+
+        async function updateTerms() {
+            const termsText = document.getElementById('setting-terms').value.trim();
+            await dbSet(`projects/${projectId}/publicSettings/terms`, termsText || null);
+            showAdminToast('参加規約を更新しました', 'success');
+        }
+
+        async function toggleAllowEntryName() {
+            const isAllowed = document.getElementById('allow-entry-name-toggle').checked;
+            await dbSet(`projects/${projectId}/publicSettings/allowEntryNameForParticipation`, isAllowed);
+            const badge = document.getElementById('allow-entry-name-status');
+            if (isAllowed) {
+                badge.textContent = '許可';
+                badge.className = 'status-badge status-open';
+                showAdminToast('エントリーネーム参加を許可しました', 'success');
+            } else {
+                badge.textContent = '本名のみ';
+                badge.className = 'status-badge status-closed';
+                showAdminToast('本名での参加のみに制限しました', 'success');
             }
         }
 

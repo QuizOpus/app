@@ -206,11 +206,11 @@
       <input type="text" id="join-id" placeholder="例: a1b2-c3d4-e5f6-g7h8" />
       
       <label>アクセスコード / パスワード</label>
-      <div style="position: relative; margin-bottom: 8px;">
-        <input type="password" id="join-password" placeholder="合言葉" style="margin-bottom: 0; padding-right: 40px;" />
-        <span style="position: absolute; right: 16px; top: 16px; cursor: pointer; color: #94a3b8;" onclick="togglePassword('join-password', 'toggle-icon-join')"><i class="fas fa-eye" id="toggle-icon-join"></i></span>
+      <div class="password-field-wrap">
+        <input type="password" id="join-password" placeholder="合言葉" />
+        <span class="password-toggle" onclick="togglePassword('join-password', 'toggle-icon-join')"><i class="fas fa-eye" id="toggle-icon-join"></i></span>
       </div>
-      <div class="magic-text"><i class="fa-solid fa-wand-magic-sparkles" style="color: #fbbf24;"></i> パスワードの種類から権限を自動判定します</div>
+      <div class="magic-text"><i class="fa-solid fa-wand-magic-sparkles magic-icon"></i> パスワードの種類から権限を自動判定します</div>
       
       <label>あなたのお名前</label>
       <input type="text" id="join-name" placeholder="例：山田太郎" />
@@ -219,7 +219,7 @@
     </div>
 
     <!-- 新規作成セクション -->
-    <div id="section-create" style="display: none;">
+    <div id="section-create" hidden>
       <label>プロジェクト名（大会名など）</label>
       <input type="text" id="create-project-name" placeholder="例：QuizOpus 2026" />
       
@@ -230,7 +230,7 @@
       <label>あなたのお名前（最初のシステム作成者）</label>
       <input type="text" id="create-name" placeholder="例：山田太郎" />
       
-      <div style="font-size:12px;color:#fca5a5;margin-bottom:16px;line-height:1.5;background:rgba(239,68,68,0.1);padding:12px;border-radius:8px;border:1px solid rgba(239,68,68,0.2);">
+      <div class="warning-box">
         <strong><i class="fa-solid fa-shield-halved"></i> データの取り扱いに関する注意</strong><br>
         ・サーバー容量制限のため、半年間アクセスのないプロジェクトは自動削除されます。<br>
         ・アップロードされた答案画像の元データは3日経過で削除されます。<br>
@@ -242,40 +242,40 @@
     </div>
 
     <!-- 作成完了セクション -->
-    <div id="section-success" style="display: none; text-align: center;">
-      <div style="font-size: 56px; margin-bottom: 16px; color: #4ade80;"><i class="fa-solid fa-circle-check"></i></div>
-      <h3 style="margin-bottom: 8px;">作成完了！</h3>
-      <p style="margin-bottom: 24px; font-size: 14px; color: #94a3b8;">以下の情報をコピーして安全な場所に保存してください。<br>（マスターパスワードは絶対に他人へ共有しないでください）</p>
+    <div id="section-success" hidden style="text-align: center;">
+      <div class="success-icon"><i class="fa-solid fa-circle-check"></i></div>
+      <h3 class="success-title">作成完了！</h3>
+      <p class="success-desc">以下の情報をコピーして安全な場所に保存してください。<br>（マスターパスワードは絶対に他人へ共有しないでください）</p>
       
-      <div style="background: rgba(15, 23, 42, 0.8); padding: 16px; border-radius: 12px; margin-bottom: 24px; text-align: left; border: 1px solid rgba(255,255,255,0.1);">
-        <label><i class="fa-solid fa-crown" style="color: #fbbf24;"></i> 管理者用 マスターパスワード (コピーして大切に保管)</label>
-        <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: nowrap;">
-          <input type="text" id="success-admin-pwd" readonly style="margin-bottom: 0; min-width: 0; border-color: rgba(251, 191, 36, 0.4);" />
-          <button class="btn" style="width: auto; padding: 0 16px; font-size: 14px; flex-shrink: 0; background: #f59e0b;" onclick="copyToClipboard('success-admin-pwd', this)">コピー</button>
+      <div class="credential-panel">
+        <label><i class="fa-solid fa-crown crown-icon"></i> 管理者用 マスターパスワード (コピーして大切に保管)</label>
+        <div class="credential-row">
+          <input type="text" id="success-admin-pwd" readonly />
+          <button class="btn master" onclick="copyToClipboard('success-admin-pwd', this)">コピー</button>
         </div>
         <label>参加ID (URLの一部になります)</label>
-        <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: nowrap;">
-          <input type="text" id="success-id" readonly style="margin-bottom: 0; min-width: 0;" />
-          <button class="btn" style="width: auto; padding: 0 16px; font-size: 14px; flex-shrink: 0; background: #2563eb;" onclick="copyToClipboard('success-id', this)">コピー</button>
+        <div class="credential-row">
+          <input type="text" id="success-id" readonly />
+          <button class="btn standard" onclick="copyToClipboard('success-id', this)">コピー</button>
         </div>
         <label>採点者用 アクセスコード</label>
-        <div style="display: flex; gap: 8px; flex-wrap: nowrap;">
-          <input type="text" id="success-pwd" readonly style="margin-bottom: 0; min-width: 0;" />
-          <button class="btn" style="width: auto; padding: 0 16px; font-size: 14px; flex-shrink: 0; background: #2563eb;" onclick="copyToClipboard('success-pwd', this)">コピー</button>
+        <div class="credential-row">
+          <input type="text" id="success-pwd" readonly />
+          <button class="btn standard" onclick="copyToClipboard('success-pwd', this)">コピー</button>
         </div>
       </div>
       <button class="btn" onclick="location.href='admin.html'">管理画面へ進む <i class="fa-solid fa-gear"></i></button>
     </div>
 
     <!-- 復元(インポート)セクション -->
-    <div id="section-import" style="display: none;">
-      <h3 style="margin-bottom: 16px; text-align: center;"><i class="fa-solid fa-clock-rotate-left"></i> バックアップの復元</h3>
-      <div style="font-size:12px;color:#94a3b8;margin-bottom:20px; line-height: 1.5; text-align: center;">
+    <div id="section-import" hidden>
+      <h3 class="section-heading"><i class="fa-solid fa-clock-rotate-left"></i> バックアップの復元</h3>
+      <div class="import-desc">
         以前保存した <code>.ciq</code> ファイルを選択し、新しい設定の下で解答データを復旧します。過去のIDとの競合を防ぐため「新しい参加ID」が発行されます。
       </div>
       
       <label><i class="fa-solid fa-file-arrow-up"></i> バックアップファイル</label>
-      <div class="file-upload-zone" onclick="document.getElementById('import-file').click()" style="margin-bottom:16px;padding:16px">
+      <div class="file-upload-zone" onclick="document.getElementById('import-file').click()">
         <i class="fa-solid fa-cloud-arrow-up"></i>
         <div class="file-label">.ciq ファイルを選択</div>
         <div class="file-name" id="import-file-name"></div>
@@ -292,7 +292,7 @@
       <label><i class="fa-solid fa-user"></i> あなたのお名前</label>
       <input type="text" id="import-name" placeholder="例：山田太郎" />
       
-      <button class="btn" id="import-btn" style="margin-top: 8px;" onclick="importProject()">復元して新設 <i class="fa-solid fa-upload"></i></button>
+      <button class="btn mt-sm" id="import-btn" onclick="importProject()">復元して新設 <i class="fa-solid fa-upload"></i></button>
       
       <div class="restore-link" onclick="setTab('join')"><i class="fa-solid fa-arrow-left"></i> 戻る</div>
     </div>

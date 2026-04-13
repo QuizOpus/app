@@ -25,9 +25,9 @@ function setTab(tab) {
 	
 	
 
-	document.getElementById('section-join').style.display = tab === 'join' ? 'block' : 'none';
-	document.getElementById('section-create').style.display = tab === 'create' ? 'block' : 'none';
-	document.getElementById('section-import').style.display = tab === 'import' ? 'block' : 'none';
+	document.getElementById('section-join').hidden = tab !== 'join';
+	document.getElementById('section-create').hidden = tab !== 'create';
+	document.getElementById('section-import').hidden = tab !== 'import';
 }
 
 function showError(msg) {
@@ -199,9 +199,9 @@ async function createProject() {
 		session.set('privateKeyJwk', JSON.stringify(privateKeyJwk));
 
 		// UIDisplay
-		document.getElementById('tabs-container').style.display = 'none';
-		document.getElementById('section-create').style.display = 'none';
-		document.getElementById('section-success').style.display = 'block';
+		document.getElementById('tabs-container').hidden = true;
+		document.getElementById('section-create').hidden = true;
+		document.getElementById('section-success').hidden = false;
 		document.getElementById('success-id').value = pid;
 		document.getElementById('success-admin-pwd').value = adminPwd;
 		document.getElementById('success-pwd').value = scorerPwd;
@@ -269,9 +269,9 @@ async function importProject() {
 		session.set('adminHash', adminHash);
 		session.set('privateKeyJwk', JSON.stringify(privateKeyJwk));
 
-		document.getElementById('tabs-container').style.display = 'none';
-		document.getElementById('section-import').style.display = 'none';
-		document.getElementById('section-success').style.display = 'block';
+		document.getElementById('tabs-container').hidden = true;
+		document.getElementById('section-import').hidden = true;
+		document.getElementById('section-success').hidden = false;
 		document.getElementById('success-id').value = pid;
 		document.getElementById('success-admin-pwd').value = adminPwd;
 		document.getElementById('success-pwd').value = scorerPwd;

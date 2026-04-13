@@ -248,7 +248,7 @@
                     mctx.drawImage(img, 0, 0);
                     doc.addImage(mc, 'PNG', p.x, p.y, markerSize, markerSize);
                 }
-                const fontRes = await fetch("fonts/BIZUDGothic-Regular.ttf");
+                const fontRes = await fetch("fonts/BIZUDGothic-Subset.ttf");
                 const fontBuffer = await fontRes.arrayBuffer();
                 let binary = ''; const bytes = new Uint8Array(fontBuffer);
                 for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
@@ -446,14 +446,14 @@
 
             if (entryListData.length === 0) {
                 el.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:40px;font-size:14px"><i class="fa-solid fa-box-open" style="font-size:28px;display:block;margin-bottom:12px;opacity:0.4"></i>保存済み答案はありません</div>';
-                document.getElementById('select-all-label').style.display = 'none';
-                document.getElementById('batch-delete-btn').style.display = 'none';
+                document.getElementById('select-all-label').hidden = true;
+                document.getElementById('batch-delete-btn').hidden = true;
                 return;
             }
 
             // コントロール表示
-            document.getElementById('select-all-label').style.display = 'flex';
-            document.getElementById('batch-delete-btn').style.display = '';
+            document.getElementById('select-all-label').hidden = false;
+            document.getElementById('batch-delete-btn').hidden = false;
 
             el.innerHTML = '';
             const grid = document.createElement('div');
@@ -766,19 +766,15 @@
             const csv = rows.map(r => r.join(',')).join('\n'); const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'analytics_all_qs.csv'; a.click();
         }
 
-        function openDeleteModal() {
-            document.getElementById('delete-target-id').textContent = projectId;
-            document.getElementById('delete-id-input').value = '';
-            document.getElementById('delete-modal').style.display = 'flex';
-        }
-
-        async function confirmDeleteProject() {
-            const typed = document.getElementById('delete-id-input').value;
-            if (typed !== projectId) { showAdminToast('プロジェクトIDが一致しません。'); return; }
-            document.getElementById('delete-modal').style.display = 'none';
+        async function openDeleteModal() {
+            const confirmed = await showConfirm(
+                `プロジェクトを完全に削除しますか？\n\nこの操作は元に戻せません。\nプロジェクトID: ${projectId}`,
+                '削除する'
+            );
+            if (!confirmed) return;
             try {
-                await db.ref(`projects/${projectId}`).remove(); 
-                showAdminToast('プロジェクトが削除されました。', 'success'); 
+                await db.ref(`projects/${projectId}`).remove();
+                showAdminToast('プロジェクトが削除されました。', 'success');
                 setTimeout(() => { session.clear(); location.href = 'index.html'; }, 1500);
             } catch(e) {
                 showAdminToast('削除エラー: ' + e.message);
@@ -932,13 +928,13 @@
             const picker = document.getElementById('dt-picker');
             picker.style.top = (rect.bottom + 8) + 'px';
             picker.style.left = Math.min(rect.left, window.innerWidth - 320) + 'px';
-            picker.style.display = 'block';
-            document.getElementById('dt-picker-overlay').style.display = 'block';
+            picker.hidden = false;
+            document.getElementById('dt-picker-overlay').hidden = false;
         }
 
         function closeDatePicker() {
-            document.getElementById('dt-picker').style.display = 'none';
-            document.getElementById('dt-picker-overlay').style.display = 'none';
+            document.getElementById('dt-picker').hidden = true;
+            document.getElementById('dt-picker-overlay').hidden = true;
         }
 
         function dtNavMonth(delta) {

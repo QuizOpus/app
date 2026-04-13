@@ -880,3 +880,201 @@ input[type="number"]::-webkit-outer-spin-button {
   .toast.hide { transform: translateY(-40px); }
 }
 
+/* ============================
+   Index Page Components
+   ============================ */
+.password-field-wrap {
+  position: relative; margin-bottom: 8px;
+}
+.password-field-wrap input { margin-bottom: 0; padding-right: 40px; }
+.password-toggle {
+  position: absolute; right: 16px; top: 16px;
+  cursor: pointer; color: #94a3b8;
+}
+.magic-icon { color: #fbbf24; }
+
+.success-icon {
+  font-size: 56px; margin-bottom: 16px; color: #4ade80;
+}
+.success-title { margin-bottom: 8px; }
+.success-desc {
+  margin-bottom: 24px; font-size: 14px; color: #94a3b8;
+}
+.credential-panel {
+  background: rgba(15, 23, 42, 0.8); padding: 16px; border-radius: 12px;
+  margin-bottom: 24px; text-align: left;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.credential-row {
+  display: flex; gap: 8px; flex-wrap: nowrap;
+}
+.credential-row:not(:last-child) { margin-bottom: 16px; }
+.credential-row input {
+  margin-bottom: 0; min-width: 0; flex: 1;
+}
+.credential-row .btn {
+  width: auto; padding: 0 16px; font-size: 14px;
+  flex-shrink: 0;
+}
+.credential-row .btn.master { background: #f59e0b; }
+.credential-row .btn.standard { background: #2563eb; }
+.crown-icon { color: #fbbf24; }
+
+.warning-box {
+  font-size: 12px; color: #fca5a5; margin-bottom: 16px;
+  line-height: 1.5; background: rgba(239,68,68,0.1);
+  padding: 12px; border-radius: 8px;
+  border: 1px solid rgba(239,68,68,0.2);
+}
+.import-desc {
+  font-size: 12px; color: #94a3b8; margin-bottom: 20px;
+  line-height: 1.5; text-align: center;
+}
+.section-heading {
+  margin-bottom: 16px; text-align: center;
+}
+
+/* ============================
+   Admin Page Utilities
+   ============================ */
+.link-btn-sm {
+  padding: 6px 12px !important; font-size: 12px !important;
+}
+.count-badge {
+  background: rgba(59,130,246,0.15); color: #60a5fa;
+  padding: 4px 12px; border-radius: 20px;
+  font-size: 12px; font-weight: 700;
+  border: 1px solid rgba(59,130,246,0.3);
+}
+.info-hint {
+  font-size: 12px; color: var(--text-muted); margin-top: 6px;
+}
+.desc-text {
+  font-size: 13px; color: var(--text-muted); margin-bottom: 16px;
+}
+.desc-text-centered {
+  font-size: 13px; color: var(--text-muted); margin-bottom: 16px;
+  line-height: 1.6;
+}
+.format-box {
+  font-size: 12px; color: var(--text-muted); margin-bottom: 16px;
+  background: rgba(15,23,42,0.5); padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+}
+.format-box-title {
+  margin-bottom: 6px; font-weight: 700;
+}
+.code-highlight { color: #60a5fa; }
+.flex-row { display: flex; gap: 8px; align-items: center; }
+.flex-row-spread {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px; flex-wrap: wrap; gap: 8px;
+}
+.flex-col-row {
+  display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start;
+}
+.flex-grow { flex: 1; min-width: 250px; }
+.mt-sm { margin-top: 8px; }
+.mt-md { margin-top: 16px; }
+.mt-lg { margin-top: 20px; }
+.mb-zero { margin-bottom: 0; }
+
+.stat-done { color: #26a641; }
+.stat-conflict { color: #f85149; }
+
+.danger-zone {
+  border: 2px solid rgba(239,68,68,0.3) !important;
+}
+.danger-title { color: #f87171; }
+
+/* Save / Processing Overlay */
+.save-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(15,23,42,0.85); backdrop-filter: blur(8px);
+  z-index: 9999; flex-direction: column;
+  align-items: center; justify-content: center; color: white;
+}
+.save-overlay-icon {
+  margin-bottom: 20px; color: var(--primary);
+}
+.save-overlay-title {
+  margin-bottom: 20px; font-size: 24px; letter-spacing: 0.05em;
+}
+.progress-bar-outer {
+  width: 80%; max-width: 500px; height: 12px;
+  background: rgba(255,255,255,0.1); border-radius: 6px;
+  overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+}
+.progress-bar-fill {
+  width: 0%; height: 100%; transition: width 0.3s ease;
+}
+.save-overlay-status {
+  color: var(--text-muted); margin-top: 16px;
+  font-size: 16px; font-weight: 600;
+}
+
+/* Date Picker Overlay */
+.dt-overlay {
+  display: none; position: fixed; inset: 0; z-index: 9998;
+}
+.hidden-canvas { display: none; }
+.time-colon { font-weight: 700; }
+.time-icon { color: var(--text-muted); }
+
+.analytics-threshold-row {
+  margin-bottom: 12px; font-size: 13px; color: var(--text-muted);
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.name-input-flex {
+  display: flex; gap: 12px; align-items: center;
+}
+.name-input-flex input { flex: 1; }
+
+/* Model Answer Grid */
+.model-grid {
+  display: grid; gap: 8px;
+}
+
+/* Legend Dot Colors */
+.legend-done { background: #26a641; }
+.legend-conflict { background: #f85149; }
+.legend-scoring { background: #1f6feb; }
+.legend-pending { background: rgba(255,255,255,0.08); }
+
+/* Entry Config Panel */
+.config-panel {
+  padding: 16px 18px; background: rgba(15,23,42,0.5);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border);
+}
+.config-panel + .config-panel { margin-top: 16px; }
+.config-row {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
+}
+.config-row .config-panel { margin-bottom: 0; }
+.toggle-info { flex: 1; }
+.toggle-info-title { font-weight: 600; font-size: 14px; }
+.toggle-info-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.period-heading {
+  font-size: 13px; font-weight: 600; margin-bottom: 12px;
+}
+.period-heading i { color: var(--primary); margin-right: 6px; }
+.period-hint {
+  font-size: 11px; color: var(--text-muted); font-weight: 400; margin-left: 6px;
+}
+.period-grid {
+  display: grid; grid-template-columns: 1fr auto 1fr;
+  gap: 8px; align-items: end;
+}
+.period-label {
+  font-size: 11px; color: var(--text-muted);
+  display: block; margin-bottom: 4px;
+}
+.period-label i { font-size: 9px; margin-right: 4px; }
+.period-label .icon-start { color: #34d399; }
+.period-label .icon-end { color: #f87171; }
+.period-arrow {
+  padding-bottom: 10px; color: var(--text-muted); font-size: 14px;
+}

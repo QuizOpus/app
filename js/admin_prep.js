@@ -217,15 +217,13 @@
 
                 // 並列バッチアップロード（5件同時）
                 const UPLOAD_CONCURRENCY = 5;
-                const bucket = firebaseConfig.storageBucket;
 
                 async function uploadEntry(a) {
                     try {
                         const storagePath = `projects/${projectId}/answers/${a.entryNumber}/pageImage`;
                         const pageRef = storage.ref(storagePath);
-                        await pageRef.putString(a.pageImage, 'data_url');
-                        // getDownloadURL() を省略 — URLを直接構築（ルールが read: if true の場合有効）
-                        const pageImageUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(storagePath)}?alt=media`;
+                        const pageSnap = await pageRef.putString(a.pageImage, 'data_url');
+                        const pageImageUrl = await pageSnap.ref.getDownloadURL();
 
                         const data = {
                             entryNumber: a.entryNumber,

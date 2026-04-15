@@ -18,18 +18,22 @@
                         await deleteStorageFolder(storage.ref(`projects/${projectId}`));
                     } catch(e) { console.warn('Storage削除スキップ:', e); }
                 }
-                // DB のサブパスを個別に削除
-                const delPaths = [
-                    `projects/${projectId}/protected/${secretHash}`,
-                    `projects/${projectId}/entries`,
-                    `projects/${projectId}/publicSettings`,
-                    `projects/${projectId}/disclosure`,
-                ];
-                const results = await Promise.allSettled(delPaths.map(p => dbRemove(p)));
-                const failures = results.filter(r => r.status === 'rejected');
-                if (failures.length > 0) {
-                    console.error('一部削除失敗:', failures);
-                }
+                // DB のサブパスを個別に削除（showDbAuthError回避のためraw refを使用）
+                const removePath = async (p) => {
+                    try { await dbRef(p).remove(); } catch(e) { console.warn(`削除スキップ: ${p}`, e.message); }
+                };
+                // protected配下のサブノードを個別に削除
+                const protectedBase = `projects/${projectId}/protected/${secretHash}`;
+                await Promise.all([
+                    removePath(`${protectedBase}/scores`),
+                    removePath(`${protectedBase}/answers`),
+                    removePath(`${protectedBase}/answers_text`),
+                    removePath(`${protectedBase}/config`),
+                    removePath(`${protectedBase}/requiredScorers`),
+                    removePath(`projects/${projectId}/entries`),
+                    removePath(`projects/${projectId}/publicSettings`),
+                    removePath(`projects/${projectId}/disclosure`),
+                ]);
                 showAdminToast('プロジェクトが削除されました。', 'success');
                 setTimeout(() => { session.clear(); location.href = 'index.html'; }, 1500);
             } catch(e) {

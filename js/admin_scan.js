@@ -96,14 +96,17 @@
             const checked = [...document.querySelectorAll('.entry-cb:checked')].map(cb => cb.dataset.num);
             if (!checked.length) return;
             if (!(await showConfirm(`${checked.length}件の答案を一括削除しますか？`))) return;
-            for (const num of checked) {
-                await dbRemove(`projects/${projectId}/protected/${secretHash}/answers/${num}`);
-                await dbRemove(`projects/${projectId}/protected/${secretHash}/scores/${num}`);
-                // Storage cleanup
+            // 全エントリーを並列削除
+            await Promise.all(checked.map(async num => {
+                const ops = [
+                    dbRemove(`projects/${projectId}/protected/${secretHash}/answers/${num}`),
+                    dbRemove(`projects/${projectId}/protected/${secretHash}/scores/${num}`)
+                ];
                 if (storage) {
-                    try { await storage.ref(`projects/${projectId}/answers/${num}/pageImage`).delete().catch(() => {}); } catch(e) {}
+                    ops.push(storage.ref(`projects/${projectId}/answers/${num}/pageImage`).delete().catch(() => {}));
                 }
-            }
+                await Promise.all(ops);
+            }));
             loadEntryList();
         }
 

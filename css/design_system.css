@@ -1654,7 +1654,7 @@ kbd {
   font-size: 14px;
   font-weight: 600;
   padding: 6px 0;
-  -moz-appearance: textfield;
+  appearance: textfield;
 }
 .number-input::-webkit-outer-spin-button,
-.number-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.number-input::-webkit-inner-spin-button { appearance: none; margin: 0; }

@@ -265,10 +265,10 @@ body.page-judge { padding: 24px; }
 .q-badge { background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 6px 16px; border-radius: var(--radius-pill); font-weight: 800; font-size: 16px; border: 1px solid rgba(59, 130, 246, 0.4); }
 .answer-badge { font-size: 24px; font-weight: bold; letter-spacing: 2px; }
 .progress-text { color: var(--text-muted); font-size: 13px; font-weight: 600; }
-.answer-grid { margin-top: 80px; padding: 20px; display: grid; gap: 8px; grid-template-columns: repeat(2, 1fr); }
+.answer-grid { margin-top: 80px; padding: 20px; display: grid; gap: 8px; grid-template-columns: repeat(2, 1fr); will-change: transform; }
 @media (min-width: 600px) { .answer-grid { grid-template-columns: repeat(5, 1fr); } }
 @media (min-width: 1024px) { .answer-grid { grid-template-columns: repeat(8, 1fr); } }
-.answer-card { background: var(--glass-bg); backdrop-filter: blur(12px) saturate(180%); border-radius: var(--radius-md); padding: 8px; text-align: center; border: 1px solid var(--glass-border); cursor: pointer; transition: transform 0.4s var(--spring), box-shadow 0.35s var(--smooth), border-color 0.3s, background 0.3s; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; }
+.answer-card { background: var(--glass-bg); backdrop-filter: blur(12px) saturate(180%); border-radius: var(--radius-md); padding: 8px; text-align: center; border: 1px solid var(--glass-border); cursor: pointer; transition: transform 0.4s var(--spring), box-shadow 0.35s var(--smooth), border-color 0.3s, background 0.3s; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; transform: translateZ(0); }
 .answer-card:hover { transform: translateY(-4px) scale(1.02); box-shadow: var(--shadow-lg); background: rgba(255,255,255,0.05); border-color: var(--glass-border-hover); }
 .answer-card.correct { border: 2px solid #10b981; background: rgba(16, 185, 129, 0.18); }
 .answer-card.wrong { border: 2px solid #ef4444; background: rgba(239, 68, 68, 0.18); }

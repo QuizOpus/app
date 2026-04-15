@@ -51,12 +51,20 @@ const currentQ = parseInt(localStorage.getItem('current_q') || '1');
                     new Promise(r => setTimeout(r, 8000))
                 ]);
                 // 各エントリーのURLをBlob URLに差し替え
+                const uniqueBlobUrls = new Set();
                 entryNumbers.forEach(num => {
                     const origUrl = answerDataCache[num]?.pageImageUrl;
                     if (origUrl && blobUrlCache[origUrl]) {
                         answerDataCache[num].pageImageUrl = blobUrlCache[origUrl];
+                        uniqueBlobUrls.add(blobUrlCache[origUrl]);
                     }
                 });
+                // 全Blob画像をデコード（GPUメモリに載せる）
+                await Promise.all([...uniqueBlobUrls].map(blobUrl => {
+                    const img = new Image();
+                    img.src = blobUrl;
+                    return img.decode().catch(() => {});
+                }));
             }
 
             if (entryNumbers.length === 0) {

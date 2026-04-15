@@ -1,7 +1,8 @@
 // admin_settings.js — プロジェクト設定・エクスポート・削除・オンボーディング
         async function openDeleteModal() {
+            const pName = document.getElementById('setting-project-name')?.value || projectId;
             const confirmed = await showConfirm(
-                `プロジェクトを完全に削除しますか？\n\nこの操作は元に戻せません。\nプロジェクトID: ${projectId}`,
+                `プロジェクト「${pName}」を本当に削除しますか？\n\nすべてのエントリー・答案・スコアが失われます。\nこの操作は元に戻せません。`,
                 '削除する'
             );
             if (!confirmed) return;

@@ -1,43 +1,39 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; connect-src 'self' wss://*.firebasedatabase.app https://*.firebasedatabase.app https://firebasestorage.googleapis.com https://*.googleapis.com https://script.google.com https://www.gstatic.com; frame-src 'self' https://*.firebasedatabase.app; img-src 'self' data: blob: https://firebasestorage.googleapis.com;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>参加規約 - QuizOpus</title>
-    <!-- Fonts -->
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/design_system.css">
-    <link rel="stylesheet" href="css/pages.css">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-</head>
-
-<body class="theme-dark">
-    <!-- Header -->
-    <header class="app-header">
-        <div class="logo">
-            <i class="fa-solid fa-layer-group"></i>
-            <span>QuizOpus</span>
-        </div>
-    </header>
-
-    <div class="container">
-        <div class="terms-container" id="terms-content">
-            <div class="loading"><i class="fa-solid fa-spinner fa-spin fa-2x"></i>
-                <p style="margin-top:16px;">読み込み中...</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- App Configuration & REST Client -->
+    <link rel="icon" type="image/png" href="favicon.png">
+    <meta name="description" content="QuizOpus - クイズ大会の解答採点を支援するウェブプラットフォーム。リアルタイム採点・成績開示・参加者管理をワンストップで。">
+    <title>QuizOpus - 参加規約</title>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="js/config.js"></script>
     <script src="js/shared.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/design_system.css">
+    <link rel="stylesheet" href="css/pages.css">
+</head>
+<body class="page-wrapper">
+    <div class="page-container">
+        <div class="page-logo">
+            <span class="logo-icon"><i class="fa-solid fa-file-contract"></i></span>
+            <h1 id="page-title"><i class="fa-solid fa-spinner fa-spin"></i> 読み込み中...</h1>
+            <div class="logo-sub" id="page-subtitle">参加規約</div>
+        </div>
+
+        <div class="page-card" id="terms-card">
+            <div id="terms-content" class="terms-body">
+                <div class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i> 読み込み中...</div>
+            </div>
+        </div>
+
+        <div class="page-footer">Powered by QuizOpus</div>
+    </div>
+
     <script>
         async function loadTerms() {
             const params = new URLSearchParams(location.search);
@@ -45,7 +41,7 @@
             const container = document.getElementById('terms-content');
 
             if (!projectId) {
-                container.innerHTML = '<h2>エラー</h2><p>プロジェクトIDが指定されていません。</p>';
+                container.innerHTML = '<p>プロジェクトIDが指定されていません。</p>';
                 return;
             }
 
@@ -53,21 +49,20 @@
                 const settings = await dbGet(`projects/${projectId}/publicSettings`);
                 const terms = settings?.terms;
 
-                // Show Project Name in header if available
                 if (settings && settings.projectName) {
-                    const headerLogo = document.querySelector('.logo span');
-                    if (headerLogo) headerLogo.textContent = settings.projectName;
+                    document.getElementById('page-title').textContent = settings.projectName;
                     document.title = `参加規約 - ${settings.projectName}`;
+                } else {
+                    document.getElementById('page-title').textContent = '参加規約';
                 }
 
                 if (terms) {
-                    // XSS対策としてDOMPurifyなどがあるとなお良いが、運営のプレーンテキストを想定
                     container.innerHTML = marked.parse(terms);
                 } else {
-                    container.innerHTML = '<h2>参加規約</h2><p>現在、参加規約は設定されていません。</p>';
+                    container.innerHTML = '<p>現在、参加規約は設定されていません。</p>';
                 }
             } catch (err) {
-                container.innerHTML = '<h2>読み込みエラー</h2><p>参加規約の取得に失敗しました。通信環境をご確認の上、再度お試しください。</p>';
+                container.innerHTML = '<p>参加規約の取得に失敗しました。通信環境をご確認の上、再度お試しください。</p>';
                 console.error(err);
             }
         }
@@ -75,5 +70,4 @@
         document.addEventListener('DOMContentLoaded', loadTerms);
     </script>
 </body>
-
 </html>

@@ -221,9 +221,9 @@
                         <span id="entry-count-badge" class="count-badge">0件</span>
                     </div>
                     <div class="flex-row">
-                        <label class="scan-select-all" id="select-all-label" hidden>
+                        <label class="custom-checkbox" id="select-all-label" hidden>
                             <input type="checkbox" id="select-all-cb" onchange="toggleSelectAll()" />
-                            <span class="scan-select-icon"><i class="fa-solid fa-check"></i></span>
+                            <span class="checkbox-mark"><svg class="checkbox-svg" viewBox="0 0 16 16"><path d="M3 8.5L6.5 12L13 4"></path></svg></span>
                             <span>全選択</span>
                         </label>
                         <button class="btn danger" id="batch-delete-btn" onclick="batchDelete()" disabled hidden><i class="fa-solid fa-trash"></i> 選択削除</button>
@@ -323,9 +323,9 @@
                     <label class="toggle-switch"><input type="checkbox" id="full-open-toggle" onchange="toggleFullOpen()"><span class="toggle-slider"></span></label>
                     <div class="toggle-info">
                         <div class="toggle-info-title">フルオープン大会モード</div>
-                        <div class="toggle-info-desc">ONにすると、エントリーフォームの「所属教育機関・学年」が「都道府県」に変わります</div>
+                        <div class="toggle-info-desc">ONにすると、エントリーフォームの「学校名・学年」が「都道府県」に変わります</div>
                     </div>
-                    <span id="full-open-status" class="status-badge status-closed">学校限定</span>
+                    <span id="full-open-status" class="status-badge status-closed">学生以下</span>
                 </div>
 
                 <div class="config-panel config-row mt-md">
@@ -335,6 +335,20 @@
                         <div class="toggle-info-desc">許可しない場合、当日システム上での本名表示が告知されます</div>
                     </div>
                     <span id="allow-entry-name-status" class="status-badge status-closed">本名のみ</span>
+                </div>
+            </div>
+            <div class="section glass-panel">
+                <h2><i class="fa-solid fa-user-check"></i> 採点設定</h2>
+                <div class="config-panel config-row">
+                    <div class="toggle-info">
+                        <div class="toggle-info-title">必要採点者数</div>
+                        <div class="toggle-info-desc">1問あたりの採点を行う人数です。採点開始後は変更できません。</div>
+                    </div>
+                    <div class="number-spinner-wrap">
+                        <button type="button" class="number-spinner-btn" onclick="adjustRequiredScorers(-1)"><i class="fa-solid fa-minus"></i></button>
+                        <input type="number" id="required-scorers" value="3" min="1" max="4" readonly />
+                        <button type="button" class="number-spinner-btn" onclick="adjustRequiredScorers(1)"><i class="fa-solid fa-plus"></i></button>
+                    </div>
                 </div>
             </div>
             <div class="section glass-panel">

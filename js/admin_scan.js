@@ -38,9 +38,9 @@
                 const card = document.createElement('div');
                 card.className = 'entry-card';
                 card.innerHTML = `
-                    <label class="scan-cb">
+                    <label class="custom-checkbox scan-cb-wrap">
                         <input type="checkbox" class="entry-cb" data-num="${num}" />
-                        <span class="cb-icon"><i class="fa-solid fa-check"></i></span>
+                        <span class="checkbox-mark"><svg class="checkbox-svg" viewBox="0 0 16 16"><path d="M3 8.5L6.5 12L13 4"></path></svg></span>
                     </label>
                     <div class="entry-info">
                         <div class="entry-name">${displayName}</div>

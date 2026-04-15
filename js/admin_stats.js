@@ -4,7 +4,8 @@
             let confirmedCount = 0, doneCount = 0, conflictCount = 0, inprogressCount = 0, untouchedCount = 0, allConfirmed = true;
             for (let q = 1; q <= totalQuestions; q++) {
                 const cs = Object.keys(scoresData[`__completed__q${q}`] || {}); 
-                const allDone = cs.length >= 3; 
+                const reqS = parseInt(document.getElementById('required-scorers')?.value) || 3;
+                const allDone = cs.length >= reqS; 
                 let hasConflict = false, allResolved = true;
                 
                 if (allDone) { 
@@ -13,7 +14,7 @@
                         const v = Object.values(qs); 
                         const co = v.filter(x => x === 'correct').length, 
                               wr = v.filter(x => x === 'wrong').length; 
-                        if (co !== 3 && wr !== 3) { 
+                        if (co !== reqS && wr !== reqS) { 
                             hasConflict = true; 
                             if (!scoresData[`__final__q${q}`]?.[en]) allResolved = false; 
                         } 

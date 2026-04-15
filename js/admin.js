@@ -181,6 +181,10 @@
 
             document.getElementById('stat-total').textContent = totalQuestions;
 
+            // 必要採点者数の読み込み
+            const reqScorers = await dbGet(`projects/${projectId}/protected/${secretHash}/requiredScorers`);
+            if (reqScorers) document.getElementById('required-scorers').value = reqScorers;
+
             // エントリ番号取得
             try {
                 const data = await dbShallow(`projects/${projectId}/protected/${secretHash}/answers`);

@@ -5,6 +5,7 @@ const { projectId, secretHash, scorerName, scorerRole } = auth || {};
 if (!auth) throw new Error('auth');
 
 let totalQuestions = 100;
+let requiredScorers = 3;
 
         async function initializeApp() {
             await waitForAuth();
@@ -13,6 +14,8 @@ let totalQuestions = 100;
             if (config) {
                 totalQuestions = config.questionCount || 100;
             }
+            const rs = await dbGet(`projects/${projectId}/protected/${secretHash}/requiredScorers`);
+            if (rs) requiredScorers = rs;
             const settings = await dbGet(`projects/${projectId}/publicSettings`);
             if (settings) {
                 document.getElementById('project-title').textContent = settings.projectName || '問題一覧';
@@ -96,8 +99,8 @@ let totalQuestions = 100;
                 const scorerList = [...scorers];
                 const completedScorers = Object.keys(scores[`__completed__q${q}`] || {});
                 const isMine = scorerList.includes(scorerName);
-                const isFull = scorerList.length >= 3 && !isMine;
-                const allDone = scorerList.length >= 3 && completedScorers.length >= 3;
+                const isFull = scorerList.length >= requiredScorers && !isMine;
+                const allDone = scorerList.length >= requiredScorers && completedScorers.length >= requiredScorers;
 
                 const card = document.getElementById(`qcard-${q}`);
                 const statusEl = document.getElementById(`qstatus-${q}`);

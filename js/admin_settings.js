@@ -48,6 +48,26 @@
             }
         };
         // ============================
+        // 採点者数設定
+        // ============================
+        async function adjustRequiredScorers(delta) {
+            const input = document.getElementById('required-scorers');
+            let val = parseInt(input.value) || 3;
+            val += delta;
+            if (val < 1) val = 1;
+            if (val > 4) val = 4;
+            // 採点開始後は変更不可
+            const scores = await dbShallow(`projects/${projectId}/protected/${secretHash}/scores`);
+            if (scores && Object.keys(scores).length > 0) {
+                showAdminToast('採点が開始されているため変更できません', 'error');
+                return;
+            }
+            input.value = val;
+            await dbSet(`projects/${projectId}/protected/${secretHash}/requiredScorers`, val);
+            showAdminToast(`必要採点者数を ${val} 人に設定しました`, 'success');
+        }
+
+        // ============================
         // 設定更新処理
         // ============================
 
@@ -59,7 +79,15 @@
         }
 
         async function toggleFullOpen() {
-            const isFullOpen = document.getElementById('full-open-toggle').checked;
+            const toggle = document.getElementById('full-open-toggle');
+            const isFullOpen = toggle.checked;
+            // エントリーが1件以上あれば変更不可
+            const entries = await dbShallow(`projects/${projectId}/entries`);
+            if (entries && Object.keys(entries).length > 0) {
+                toggle.checked = !isFullOpen; // 元に戻す
+                showAdminToast('エントリーが存在するため大会形式を変更できません', 'error');
+                return;
+            }
             await dbSet(`projects/${projectId}/publicSettings/fullOpen`, isFullOpen);
             const badge = document.getElementById('full-open-status');
             if (isFullOpen) {
@@ -67,9 +95,9 @@
                 badge.className = 'status-badge status-open';
                 showAdminToast('フルオープン大会モードに切り替えました', 'success');
             } else {
-                badge.textContent = '学校限定';
+                badge.textContent = '学生以下';
                 badge.className = 'status-badge status-closed';
-                showAdminToast('学校限定モードに切り替えました', 'success');
+                showAdminToast('学生以下モードに切り替えました', 'success');
             }
         }
 

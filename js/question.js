@@ -6,6 +6,7 @@ const auth = requireAuth();
 const { projectId, secretHash, scorerName } = auth || {};
 if (!auth) throw new Error('auth');
 const currentQ = parseInt(localStorage.getItem('current_q') || '1');
+let requiredScorers = 3;
 
         document.getElementById('q-badge').textContent = `${currentQ} 問`;
 
@@ -22,10 +23,12 @@ const currentQ = parseInt(localStorage.getItem('current_q') || '1');
         async function init() {
             await waitForAuth();
             // 模範解答と全答案データを一括取得
-            const [answerText, allAnswers] = await Promise.all([
+            const [answerText, allAnswers, rs] = await Promise.all([
                 dbGet(`projects/${projectId}/protected/${secretHash}/answers_text/${currentQ}`),
-                dbGet(`projects/${projectId}/protected/${secretHash}/answers`)
+                dbGet(`projects/${projectId}/protected/${secretHash}/answers`),
+                dbGet(`projects/${projectId}/protected/${secretHash}/requiredScorers`)
             ]);
+            if (rs) requiredScorers = rs;
             document.getElementById('answer-badge').textContent = answerText || '未設定';
 
             if (allAnswers) {
@@ -93,7 +96,7 @@ const currentQ = parseInt(localStorage.getItem('current_q') || '1');
                     const scorers = current || {};
                     const names = Object.keys(scorers);
                     if (names.includes(scorerName)) return { ...scorers };
-                    if (names.length >= 3) return undefined;
+                    if (names.length >= requiredScorers) return undefined;
                     return { ...scorers, [scorerName]: true };
                 }
             ).catch(e => {

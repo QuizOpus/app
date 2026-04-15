@@ -154,6 +154,10 @@ async function createProject() {
 		showError('全ての項目を入力してください');
 		return;
 	}
+	if (!document.getElementById('create-tos').checked) {
+		showError('利用規約・プライバシーポリシーに同意してください');
+		return;
+	}
 
 	btn.disabled = true;
 	btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> 作成中...';

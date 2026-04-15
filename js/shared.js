@@ -4,245 +4,179 @@
  * 全ページで使い回す関数・定数を集約。
  * config.js, crypto.js の後に読み込むこと。
  *
- * === Zero-Cost Scale Architecture ===
- * すべてのデータベース通信を REST API (fetch) で行い、
- * WebSocket 接続数 (Spark: 100) の制限を完全に回避する。
+ * === Realtime Architecture ===
+ * Firebase JS SDK の WebSocket リアルタイム通信を使用。
+ * 変更があった時だけデータを受信し、帯域を最小限に抑える。
  */
 
 // ============================================
-//  定数
+//  Firebase Database リファレンス
 // ============================================
 
-// Firebase REST API ベースURL
-const FIREBASE_REST_BASE = 'https://quziopus-default-rtdb.asia-southeast1.firebasedatabase.app';
+const db = firebase.database();
+const dbRef = (path) => db.ref(path);
 
-// firebase.database.ServerValue.TIMESTAMP の REST 版
-const SERVER_TIMESTAMP = { ".sv": "timestamp" };
+// firebase.database.ServerValue.TIMESTAMP
+const SERVER_TIMESTAMP = firebase.database.ServerValue.TIMESTAMP;
 
 // ============================================
-//  REST API ヘルパー
+//  Database ヘルパー (SDK版 — インターフェース互換)
 // ============================================
 
 /**
- * データ取得 (GET)
+ * データ取得 (一回だけ読み取り)
  * @param {string} path - 例: 'projects/xxx/publicSettings'
  * @returns {Promise<any>} data or null
  */
 async function dbGet(path) {
-    const res = await fetch(`${FIREBASE_REST_BASE}/${path}.json`);
-    if (!res.ok) {
-        if (res.status === 401 || res.status === 403) { showDbAuthError(); throw new Error('PERMISSION_DENIED'); }
-        throw new Error(`dbGet(${path}) failed: ${res.status}`);
+    try {
+        const snap = await dbRef(path).get();
+        return snap.val();
+    } catch (e) {
+        if (e.code === 'PERMISSION_DENIED') { showDbAuthError(); }
+        throw e;
     }
-    return await res.json();
 }
 
 /**
  * データセット (PUT) — パス全体を上書き
  */
 async function dbSet(path, data) {
-    const res = await fetch(`${FIREBASE_REST_BASE}/${path}.json`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
-    if (!res.ok) {
-        if (res.status === 401 || res.status === 403) { showDbAuthError(); throw new Error('PERMISSION_DENIED'); }
-        throw new Error(`dbSet(${path}) failed: ${res.status}`);
+    try {
+        await dbRef(path).set(data);
+        return data;
+    } catch (e) {
+        if (e.code === 'PERMISSION_DENIED') { showDbAuthError(); }
+        throw e;
     }
-    return await res.json();
 }
 
 /**
  * データ更新 (PATCH) — 既存データにマージ
  */
 async function dbUpdate(path, data) {
-    const res = await fetch(`${FIREBASE_REST_BASE}/${path}.json`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
-    if (!res.ok) {
-        if (res.status === 401 || res.status === 403) { showDbAuthError(); throw new Error('PERMISSION_DENIED'); }
-        throw new Error(`dbUpdate(${path}) failed: ${res.status}`);
+    try {
+        await dbRef(path).update(data);
+        return data;
+    } catch (e) {
+        if (e.code === 'PERMISSION_DENIED') { showDbAuthError(); }
+        throw e;
     }
-    return await res.json();
 }
 
 /**
  * データ削除 (DELETE)
  */
 async function dbRemove(path) {
-    const res = await fetch(`${FIREBASE_REST_BASE}/${path}.json`, { method: 'DELETE' });
-    if (!res.ok) throw new Error(`dbRemove(${path}) failed: ${res.status}`);
+    try {
+        await dbRef(path).remove();
+    } catch (e) {
+        if (e.code === 'PERMISSION_DENIED') { showDbAuthError(); }
+        throw e;
+    }
 }
 
 /**
- * シャロー読み取り (キーのみ高速取得)
+ * シャロー読み取り互換 (SDK版)
+ * SDKにはshallow readがないため、全データを取得してキーだけのオブジェクトに変換。
  */
 async function dbShallow(path) {
-    const res = await fetch(`${FIREBASE_REST_BASE}/${path}.json?shallow=true`);
-    if (!res.ok) throw new Error(`dbShallow(${path}) failed: ${res.status}`);
-    return await res.json();
+    const data = await dbGet(path);
+    if (!data || typeof data !== 'object') return data;
+    const result = {};
+    for (const key of Object.keys(data)) result[key] = true;
+    return result;
 }
 
 /**
  * クエリ (orderByChild + equalTo)
  */
 async function dbQuery(path, orderBy, equalTo) {
-    const eqParam = typeof equalTo === 'string' ? `"${equalTo}"` : equalTo;
-    const url = `${FIREBASE_REST_BASE}/${path}.json?orderBy="${orderBy}"&equalTo=${eqParam}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`dbQuery(${path}) failed: ${res.status}`);
-    return await res.json();
+    const snap = await dbRef(path).orderByChild(orderBy).equalTo(equalTo).get();
+    return snap.val();
 }
 
 /**
- * ETag ベースのトランザクション（排他制御付き読み書き）
- * WebSocket 接続なしでアトミックな更新を実現する。
+ * SDK トランザクション（排他制御付き読み書き）
  * 4人目の滑り込み防止や受付番号の連番管理に使用。
  *
  * @param {string} path
  * @param {function} updateFn - 現在の値を受け取り新しい値を返す。undefined で中止。
- * @param {number} maxRetries
  * @returns {Promise<{committed: boolean, value: any}>}
  */
-async function dbTransaction(path, updateFn, maxRetries = 25) {
-    const url = `${FIREBASE_REST_BASE}/${path}.json`;
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-        const res = await fetch(url, { headers: { 'X-Firebase-ETag': 'true' } });
-        if (!res.ok) throw new Error(`dbTransaction GET failed: ${res.status}`);
-        const etag = res.headers.get('ETag');
-        const currentVal = await res.json();
-        const newVal = updateFn(currentVal);
-        if (newVal === undefined) return { committed: false, value: currentVal };
-
-        const putRes = await fetch(url, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'if-match': etag },
-            body: JSON.stringify(newVal)
-        });
-        if (putRes.ok) {
-            return { committed: true, value: newVal };
-        }
-        if (putRes.status === 412) {
-            // 指数バックオフ + ジッター（200人同時エントリーでも衝突を分散）
-            const baseDelay = Math.min(50 * Math.pow(2, attempt), 2000);
-            const jitter = Math.random() * baseDelay;
-            await new Promise(r => setTimeout(r, baseDelay + jitter));
-            continue;
-        }
-        throw new Error(`dbTransaction PUT failed: ${putRes.status}`);
-    }
-    throw new Error('dbTransaction: リトライ回数超過。時間を置いて再度お試しください。');
+async function dbTransaction(path, updateFn) {
+    const result = await dbRef(path).transaction(updateFn);
+    return { committed: result.committed, value: result.snapshot.val() };
 }
 
 // ============================================
-//  ポーリング（リアルタイム同期の代替）
-//  3〜5秒間隔でデータを取得し、WebSocket 接続ゼロを実現
+//  リアルタイムリスナー（Poller 互換インターフェース）
+//  WebSocket で変更を即座に受信。
+//  Poller と同じ start()/stop()/restart() を持つ。
 // ============================================
 
 class Poller {
     /**
      * @param {string} path - Firebase パス
      * @param {function} callback - データ受信時のコールバック
-     * @param {number} intervalMs - ポーリング間隔 (デフォルト 3000ms)
+     * @param {number} intervalMs - 互換性のため残すが使用しない
      */
     constructor(path, callback, intervalMs = 3000) {
         this.path = path;
+        this._ref = dbRef(path);
         this.callback = callback;
-        this.intervalMs = intervalMs;
-        this._timerId = null;
+        this.intervalMs = intervalMs; // 互換性のため
         this._active = false;
-        this._failCount = 0;
-        this._lastETag = null;      // 帯域最適化: 変更なしなら 304 で応答を節約
-        this._notifiedError = false;
-    }
-
-    async _tick() {
-        if (!this._active) return;
-        try {
-            // ETag 条件付き GET で帯域節約（データ未変更時は 304 → コールバック不要）
-            const headers = {};
-            if (this._lastETag) headers['If-None-Match'] = this._lastETag;
-            headers['X-Firebase-ETag'] = 'true';
-
-            const res = await fetch(`${FIREBASE_REST_BASE}/${this.path}.json`, { headers });
-
-            if (res.status === 304) {
-                // データ変更なし → スキップ（帯域節約）
-            } else if (res.ok) {
-                this._lastETag = res.headers.get('ETag');
-                const data = await res.json();
-                this.callback(data);
-            } else if (res.status === 401 || res.status === 403) {
-                showDbAuthError();
-                this._active = false;
-                return;
-            } else {
-                throw new Error(`HTTP ${res.status}`);
-            }
-            // 成功 → 連続失敗カウンタをリセット
-            if (this._failCount > 0) {
-                this._failCount = 0;
-                if (this._notifiedError) {
-                    this._notifiedError = false;
-                    if (typeof showToast === 'function') showToast('通信が回復しました', 'success');
-                }
-            }
-        } catch (e) {
-            this._failCount++;
-            console.error(`Poller(${this.path}) fail #${this._failCount}:`, e);
-            if (this._failCount >= 3 && !this._notifiedError) {
-                this._notifiedError = true;
-                if (typeof showToast === 'function') showToast('サーバーとの通信に問題が発生しています', 'error', 8000);
-            }
-        }
-        if (this._active) {
-            this._timerId = setTimeout(() => this._tick(), this.intervalMs);
-        }
     }
 
     start() {
         if (this._active) return this;
         this._active = true;
-        this._tick(); // 初回は即座に取得
+        this._ref.on('value', (snap) => {
+            if (this._active) this.callback(snap.val());
+        }, (error) => {
+            console.error(`Listener(${this.path}) error:`, error);
+            if (error.code === 'PERMISSION_DENIED') showDbAuthError();
+        });
         return this;
     }
 
     stop() {
         this._active = false;
-        if (this._timerId) { clearTimeout(this._timerId); this._timerId = null; }
+        this._ref.off();
         return this;
     }
 
-    restart() { this.stop(); this._lastETag = null; this.start(); return this; }
+    restart() {
+        this.stop();
+        this.start();
+        return this;
+    }
 }
 
 // ============================================
-//  アイドル監視 & 通信管理
-//  無操作時にポーリングを停止して帯域を節約
+//  接続管理 (IdleManager 互換インターフェース)
+//  タブ非アクティブ時に接続を切断して帯域を節約。
+//  WebSocket 自体を切断/復帰する。
 // ============================================
 
 const IdleManager = {
-    _pollers: [],
+    _listeners: [],
     _idleTimer: null,
     _visTimer: null,
-    _slowTimer: null,
     _paused: false,
-    _slow: false,
     IDLE_MS: 10 * 60 * 1000,    // 10分無操作で通信停止
-    SLOW_MS: 30 * 1000,          // 30秒無操作でポーリング間隔を倍に
 
-    register(poller) { this._pollers.push(poller); },
+    register(listener) { this._listeners.push(listener); },
 
     init() {
         // タブ切替監視
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
+                // 裏に回って30秒後に接続切断
                 this._visTimer = setTimeout(() => {
                     if (document.hidden) this.pause();
-                }, 60000); // 裏に回って60秒後に停止
+                }, 30000);
             } else {
                 clearTimeout(this._visTimer);
                 if (this._paused) this.resume();
@@ -253,7 +187,6 @@ const IdleManager = {
         ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => {
             document.addEventListener(evt, () => {
                 if (this._paused) this.resume();
-                if (this._slow) this._restoreSpeed();
                 this.resetIdle();
             }, { passive: true });
         });
@@ -262,43 +195,22 @@ const IdleManager = {
 
     resetIdle() {
         if (this._idleTimer) clearTimeout(this._idleTimer);
-        if (this._slowTimer) clearTimeout(this._slowTimer);
         this._idleTimer = setTimeout(() => this.pause(), this.IDLE_MS);
-        // 30秒操作なし → ポーリング間隔を倍にして帯域節約
-        this._slowTimer = setTimeout(() => this._enterSlow(), this.SLOW_MS);
-    },
-
-    _enterSlow() {
-        if (this._slow || this._paused) return;
-        this._slow = true;
-        this._pollers.forEach(p => {
-            p._origInterval = p._origInterval || p.intervalMs;
-            p.intervalMs = p._origInterval * 2;
-        });
-    },
-
-    _restoreSpeed() {
-        this._slow = false;
-        this._pollers.forEach(p => {
-            if (p._origInterval) { p.intervalMs = p._origInterval; }
-        });
     },
 
     pause() {
         if (this._paused) return;
         this._paused = true;
-        this._pollers.forEach(p => p.stop());
+        // WebSocket 接続自体を切断（全リスナーが一括停止）
+        firebase.database().goOffline();
         if (typeof showToast === 'function') showToast('無操作のため通信を一時停止しました。画面を操作すると再開します。', 'info', 15000);
     },
 
     resume() {
         if (!this._paused) return;
         this._paused = false;
-        this._slow = false;
-        this._pollers.forEach(p => {
-            if (p._origInterval) { p.intervalMs = p._origInterval; }
-            p.start();
-        });
+        // WebSocket 再接続 → 全リスナーが自動的に再開
+        firebase.database().goOnline();
     }
 };
 
@@ -537,9 +449,9 @@ const ConnectionMonitor = {
         if (this._wasOffline) {
             this._onlineBanner.classList.add('visible');
             setTimeout(() => this._onlineBanner.classList.remove('visible'), 3000);
-            // ポーラーを再起動してデータを即座に同期
-            if (typeof IdleManager !== 'undefined' && IdleManager._pollers) {
-                IdleManager._pollers.forEach(p => { if (p._active) p.restart(); });
+            // リスナーを再起動してデータを即座に同期
+            if (typeof IdleManager !== 'undefined' && IdleManager._listeners) {
+                IdleManager._listeners.forEach(l => { if (l._active) l.restart(); });
             }
         }
     }

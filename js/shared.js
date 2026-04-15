@@ -169,66 +169,6 @@ class Poller {
 }
 
 // ============================================
-//  接続管理 (IdleManager 互換インターフェース)
-//  タブ非アクティブ時に接続を切断して帯域を節約。
-//  WebSocket 自体を切断/復帰する。
-// ============================================
-
-const IdleManager = {
-    _listeners: [],
-    _idleTimer: null,
-    _visTimer: null,
-    _paused: false,
-    IDLE_MS: 10 * 60 * 1000,    // 10分無操作で通信停止
-
-    register(listener) { this._listeners.push(listener); },
-
-    init() {
-        // タブ切替監視
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                // 裏に回って30秒後に接続切断
-                this._visTimer = setTimeout(() => {
-                    if (document.hidden) this.pause();
-                }, 30000);
-            } else {
-                clearTimeout(this._visTimer);
-                if (this._paused) this.resume();
-                this.resetIdle();
-            }
-        });
-        // ユーザー操作監視
-        ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => {
-            document.addEventListener(evt, () => {
-                if (this._paused) this.resume();
-                this.resetIdle();
-            }, { passive: true });
-        });
-        this.resetIdle();
-    },
-
-    resetIdle() {
-        if (this._idleTimer) clearTimeout(this._idleTimer);
-        this._idleTimer = setTimeout(() => this.pause(), this.IDLE_MS);
-    },
-
-    pause() {
-        if (this._paused) return;
-        this._paused = true;
-        // WebSocket 接続自体を切断（全リスナーが一括停止）
-        firebase.database().goOffline();
-        if (typeof showToast === 'function') showToast('無操作のため通信を一時停止しました。画面を操作すると再開します。', 'info', 15000);
-    },
-
-    resume() {
-        if (!this._paused) return;
-        this._paused = false;
-        // WebSocket 再接続 → 全リスナーが自動的に再開
-        firebase.database().goOnline();
-    }
-};
-
-// ============================================
 //  共通UIユーティリティ
 // ============================================
 
@@ -463,10 +403,7 @@ const ConnectionMonitor = {
         if (this._wasOffline) {
             this._onlineBanner.classList.add('visible');
             setTimeout(() => this._onlineBanner.classList.remove('visible'), 3000);
-            // リスナーを再起動してデータを即座に同期
-            if (typeof IdleManager !== 'undefined' && IdleManager._listeners) {
-                IdleManager._listeners.forEach(l => { if (l._active) l.restart(); });
-            }
+            // WebSocket auto-reconnects and listeners resume automatically
         }
     }
 };

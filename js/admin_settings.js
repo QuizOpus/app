@@ -18,7 +18,14 @@
                         }
                     } catch(e) {}
                 }
-                await dbRemove(`projects/${projectId}`);
+                // DB のサブパスを個別に削除（ルート一括削除は権限エラーになるため）
+                await Promise.all([
+                    dbRemove(`projects/${projectId}/protected`),
+                    dbRemove(`projects/${projectId}/entries`),
+                    dbRemove(`projects/${projectId}/publicSettings`),
+                    dbRemove(`projects/${projectId}/settings`),
+                    dbRemove(`projects/${projectId}/disclosure`),
+                ].map(p => p.catch(() => {})));
                 showAdminToast('プロジェクトが削除されました。', 'success');
                 setTimeout(() => { session.clear(); location.href = 'index.html'; }, 1500);
             } catch(e) {

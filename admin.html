@@ -105,7 +105,7 @@
                         <div class="toggle-info-title">エントリー受付</div>
                         <div class="toggle-info-desc">OFFにすると期間に関わらず即時停止</div>
                     </div>
-                    <span id="entry-open-status" class="status-badge status-open">受付中</span>
+                    <span id="entry-open-status" class="status-badge closed">停止中</span>
                 </div>
 
                 <!-- 期間設定 -->
@@ -142,7 +142,7 @@
                     <div class="link-row"><span class="link-label"><i class="fa-solid fa-user-xmark"></i> キャンセル</span><a id="cancel-link" href="#" target="_blank" hidden></a><button class="btn secondary link-btn-sm" onclick="window.open(document.getElementById('cancel-link').href)"><i class="fa-solid fa-arrow-up-right-from-square"></i></button><button class="btn secondary link-btn-sm" onclick="copyUrl('cancel-link', this)"><i class="fa-solid fa-copy"></i></button></div>
                     <div class="link-row"><span class="link-label"><i class="fa-solid fa-chart-column"></i> 成績開示</span><a id="disclosure-link" href="#" target="_blank" hidden></a><button class="btn secondary link-btn-sm" onclick="window.open(document.getElementById('disclosure-link').href)"><i class="fa-solid fa-arrow-up-right-from-square"></i></button><button class="btn secondary link-btn-sm" onclick="copyUrl('disclosure-link', this)"><i class="fa-solid fa-copy"></i></button></div>
                 </div>
-                <button class="btn secondary mt-md" onclick="exportEntriesCSV()"><i class="fa-solid fa-file-csv"></i> CSV エクスポート</button>
+                <button class="btn secondary mt-md" onclick="exportEntriesCSV()"><i class="fa-solid fa-file-csv"></i> 参加者名簿CSV</button>
             </div>
             <div class="section glass-panel">
                 <h2><i class="fa-solid fa-address-book"></i> 参加者一覧</h2>
@@ -265,9 +265,9 @@
                 </div>
             </div>
             <div class="section glass-panel">
-                <h2><i class="fa-solid fa-file-csv"></i> CSV出力</h2>
+                <h2><i class="fa-solid fa-file-csv"></i> 採点結果CSV</h2>
                 <div class="csv-status" id="csv-status">確認中...</div>
-                <button class="btn" id="csv-btn" disabled onclick="exportCSV()"><i class="fa-solid fa-download"></i> CSV出力</button>
+                <button class="btn" id="csv-btn" disabled onclick="exportCSV()"><i class="fa-solid fa-download"></i> 採点結果CSV出力</button>
             </div>
             <div class="section glass-panel">
                 <h2><i class="fa-solid fa-magnifying-glass-chart"></i> 問題アナリティクス</h2>
@@ -280,7 +280,7 @@
                     </div>
                     <span>人以下をハイライト</span>
                 </div>
-                <button class="btn secondary" onclick="exportAnalyticsCSV()"><i class="fa-solid fa-file-csv"></i> 全問データCSV</button>
+                <button class="btn secondary" onclick="exportAnalyticsCSV()"><i class="fa-solid fa-file-csv"></i> 正答率分析CSV</button>
                 <div class="table-container mt-md" style="max-height:400px;">
                     <table id="analytics-table">
                         <thead>

@@ -188,7 +188,7 @@ const params = new URLSearchParams(location.search);
                     let blocked = false;
                     let blockTitle = '';
                     let blockDetail = '';
-                    if (settings.entryOpen === false) {
+                    if (settings.entryOpen !== true) {
                         blocked = true;
                         blockTitle = '受付は現在停止中です';
                         blockDetail = '管理者が受付を再開するまでお待ちください。';

@@ -149,7 +149,7 @@
 
             const ec = await dbGet(`projects/${projectId}/protected/${secretHash}/entryConfig`);
             if (ec) {
-                const isOpen = ec.entryOpen !== false;
+                const isOpen = ec.entryOpen === true;
                 document.getElementById('entry-open-toggle').checked = isOpen;
                 if (ec.periodStart) {
                     document.getElementById('entry-period-start').value = ec.periodStart;

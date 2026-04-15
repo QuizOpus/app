@@ -30,7 +30,7 @@ const currentQ = parseInt(localStorage.getItem('current_q') || '1');
 
             if (allAnswers) {
                 entryNumbers = Object.keys(allAnswers).map(Number).filter(n => n > 0).sort((a, b) => a - b);
-                // キャッシュに格納 & 画像をBlob URLに変換（ローカルメモリで即表示）
+                // キャッシュに格納 & 画像をBlob URLに変換（メモリ上で即表示）
                 const blobUrlCache = {};
                 const preloadPromises = [];
                 entryNumbers.forEach(num => {

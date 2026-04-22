@@ -298,7 +298,7 @@
                 <h2><i class="fa-solid fa-scale-balanced"></i> 同点処理</h2>
                 <div class="config-panel" style="margin-bottom:12px;">
                     <div class="config-row" style="flex-wrap:wrap;gap:12px;align-items:flex-start;">
-                        <div>
+                        <div style="min-width:fit-content;">
                             <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">方式</label>
                             <select id="tiebreak-mode" class="custom-select" onchange="document.getElementById('tiebreak-approx').style.display=this.value==='approx'?'flex':'none'">
                                 <option value="streak">連答（最長連続正解数）</option>
@@ -326,7 +326,7 @@
                 <div class="csv-status" id="csv-status"><i class="fa-solid fa-spinner fa-spin"></i> 確認中...</div>
                 <div class="config-panel" style="margin-bottom:12px;">
                     <div class="config-row" style="flex-wrap:wrap;gap:8px;">
-                        <div>
+                        <div style="min-width:fit-content;">
                             <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">名前区切り</label>
                             <select id="csv-name-sep" class="custom-select">
                                 <option value="fullspace">全角スペース</option>
@@ -334,7 +334,7 @@
                                 <option value="none">区切りなし</option>
                             </select>
                         </div>
-                        <div>
+                        <div style="min-width:fit-content;">
                             <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">文字数固定</label>
                             <select id="csv-name-fixed" class="custom-select">
                                 <option value="0">なし</option>

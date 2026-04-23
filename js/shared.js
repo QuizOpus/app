@@ -134,6 +134,18 @@ async function dbTransaction(path, updateFn) {
     return { committed: result.committed, value: result.snapshot.val() };
 }
 
+/**
+ * クエリ (orderByChild + equalTo)
+ * @param {string} path - Firebase パス
+ * @param {string} childKey - ソート/フィルタ対象の子キー
+ * @param {*} value - 一致させる値
+ * @returns {Promise<any>} data or null
+ */
+async function dbQuery(path, childKey, value) {
+    const snap = await dbRef(path).orderByChild(childKey).equalTo(value).once('value');
+    return snap.val();
+}
+
 // ============================================
 //  リアルタイムリスナー（Poller 互換インターフェース）
 //  WebSocket で変更を即座に受信。

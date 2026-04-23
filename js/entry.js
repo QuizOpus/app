@@ -70,6 +70,19 @@ const params = new URLSearchParams(location.search);
             const pw = generatePW();
 
             try {
+                // メール重複チェック
+                const emailHash = await AppCrypto.hashPassword(email.toLowerCase());
+                const existing = await dbQuery(
+                    `projects/${projectId}/entries`,
+                    'emailHash', emailHash
+                );
+                if (existing) {
+                    const activeEntry = Object.values(existing).find(e => e.status !== 'canceled');
+                    if (activeEntry) {
+                        throw new Error('このメールアドレスは既にエントリー済みです。');
+                    }
+                }
+
                 // SDK トランザクションで受付番号をアトミックに取得
                 const txResult = await dbTransaction(
                     `projects/${projectId}/publicSettings/lastEntryNumber`,
@@ -116,7 +129,7 @@ const params = new URLSearchParams(location.search);
                     uuid,
                     entryNumber,
                     encryptedPII,
-                    emailHash: await AppCrypto.hashPassword(email.toLowerCase()),
+                    emailHash,
                     disclosurePw: pwHash,
                     status: entryStatus,
                     checkedIn: false,

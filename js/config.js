@@ -39,6 +39,9 @@ const EMAIL_CONFIG = {
   endpoint: 'https://x6fnhov5w5.execute-api.ap-northeast-1.amazonaws.com/send-email',
   apiKey: 'ciq2026ses',
 };
-if (typeof CIQEmail !== 'undefined' && EMAIL_CONFIG.endpoint) {
-  CIQEmail.configure(EMAIL_CONFIG);
-}
+// email.js より後に実行されるよう遅延初期化
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof CIQEmail !== 'undefined' && EMAIL_CONFIG.endpoint) {
+    CIQEmail.configure(EMAIL_CONFIG);
+  }
+});

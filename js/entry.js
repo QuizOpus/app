@@ -121,6 +121,17 @@ const params = new URLSearchParams(location.search);
                 // DBに保存
                 await dbSet(`projects/${projectId}/entries/${uuid}`, entryData);
 
+                // メール通知（非同期・失敗しても登録は有効）
+                const pName = document.getElementById('project-title').textContent || projectId;
+                CIQEmail.sendEntryConfirmation(email, {
+                    projectName: pName,
+                    entryNumber: String(entryNumber).padStart(3, '0'),
+                    password: pw,
+                    familyName,
+                    firstName,
+                    status: entryStatus,
+                }).catch(e => console.warn('メール送信スキップ:', e));
+
                 // 成功画面を表示
                 document.getElementById('form-card').style.display = 'none';
                 document.getElementById('result-card').style.display = 'block';

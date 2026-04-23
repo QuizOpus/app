@@ -88,6 +88,16 @@ const params = new URLSearchParams(location.search);
                 canceledAt: SERVER_TIMESTAMP
             });
 
+            // メール通知（非同期・失敗しても処理済み）
+            try {
+                if (targetData.encryptedPII) {
+                    // 暗号化PIIからメールを取得するにはprivateKeyが必要
+                    // キャンセルフォームにはprivateKeyがないので、メール送信はスキップ
+                    // → 管理者側でキャンセル通知が必要な場合は管理画面から対応
+                    console.log('[Cancel] PII暗号化済み — メール送信にはprivateKeyが必要のためスキップ');
+                }
+            } catch(e) { console.warn('キャンセルメール送信スキップ:', e); }
+
             document.getElementById('form-card').innerHTML = `
                 <div style="text-align:center;">
                     <h2 style="color:#ef5350;margin-bottom:16px;">キャンセル完了</h2>

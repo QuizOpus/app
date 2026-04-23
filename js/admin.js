@@ -150,8 +150,8 @@
                     document.getElementById('max-entries-input-area').style.display = 'block';
                     document.getElementById('setting-max-entries').value = ec.maxEntries;
                 }
-                updateEntryOpenStatus();
             }
+            updateEntryOpenStatus();
 
             // publicSettings の読み込み（規約等）
             const publicSettings = await dbGet(`projects/${projectId}/publicSettings`) || {};

@@ -233,14 +233,17 @@
 
                 async function uploadEntry(a) {
                     try {
-                        await dbSet(`projects/${projectId}/protected/${secretHash}/answers/${a.entryNumber}`, {
-                            entryNumber: a.entryNumber,
-                            page: a.page,
-                            uploadedAt: SERVER_TIMESTAMP,
-                            pageImage: a.pageImage,
-                            cellRegions: a.cellRegions,
-                            pageWidth: a.pageWidth
-                        });
+                        // メタデータと画像を分離保存（読み込み高速化のため）
+                        await Promise.all([
+                            dbSet(`projects/${projectId}/protected/${secretHash}/answers/${a.entryNumber}`, {
+                                entryNumber: a.entryNumber,
+                                page: a.page,
+                                uploadedAt: SERVER_TIMESTAMP,
+                                cellRegions: a.cellRegions,
+                                pageWidth: a.pageWidth
+                            }),
+                            dbSet(`projects/${projectId}/protected/${secretHash}/answerImages/${a.entryNumber}`, a.pageImage)
+                        ]);
                     } catch (e) {
                         console.error(`Entry ${a.entryNumber} upload error:`, e);
                         showAdminToast(`受付番号 ${padNum(a.entryNumber)}: 保存失敗`, 'error');

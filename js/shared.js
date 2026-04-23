@@ -293,7 +293,11 @@ async function showPreview(projectId, secretHash, entryNum) {
 
     const answerData = await dbGet(`projects/${projectId}/protected/${secretHash}/answers/${entryNum}`);
     const pc = document.getElementById('preview-content');
-    const imageUrl = answerData?.pageImage;
+    // 新形式: answerImages に分離保存 / 旧形式: answers内のpageImage
+    let imageUrl = answerData?.pageImage;
+    if (!imageUrl) {
+        imageUrl = await dbGet(`projects/${projectId}/protected/${secretHash}/answerImages/${entryNum}`);
+    }
     if (imageUrl) {
         pc.innerHTML = `<img src="${imageUrl}" alt="${name}" class="preview-image">`;
     } else {

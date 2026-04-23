@@ -66,24 +66,50 @@ const { projectId, secretHash } = auth;
                 });
             }
 
-            // キャッシュから画像データを同期的に構築（ネットワーク不要）
+            // キャッシュから画像データを構築（ネットワーク不要 or 遅延ロード）
+            const needsImageLoad = [];
             conflicts.forEach(c => {
                 if (!answersData[c.entryNum]) answersData[c.entryNum] = { cells: {} };
                 if (answersData[c.entryNum].cells[`q${c.q}`] === undefined) {
                     const ansData = answersDataCache[c.entryNum];
                     const region = ansData?.cellRegions?.[`q${c.q}`];
+                    // 旧形式（pageImageがanswersに含まれる）
                     if (region && ansData?.pageImage && ansData?.pageWidth) {
                         answersData[c.entryNum].cells[`q${c.q}`] = {
                             type: 'crop', url: ansData.pageImage,
                             x: region.x, y: region.y, w: region.w, h: region.h,
                             pageW: ansData.pageWidth
                         };
+                    } else if (region && ansData?.pageWidth) {
+                        // 新形式：画像は後からロード
+                        answersData[c.entryNum].cells[`q${c.q}`] = {
+                            type: 'crop', url: null,
+                            x: region.x, y: region.y, w: region.w, h: region.h,
+                            pageW: ansData.pageWidth
+                        };
+                        needsImageLoad.push(c.entryNum);
                     } else {
                         const cellUrl = ansData?.cells?.[`q${c.q}`] || null;
                         answersData[c.entryNum].cells[`q${c.q}`] = cellUrl;
                     }
                 }
             });
+            // 画像がまだ無いエントリーを非同期ロード
+            if (needsImageLoad.length > 0) {
+                const unique = [...new Set(needsImageLoad)];
+                Promise.all(unique.map(async entryNum => {
+                    if (answersDataCache[entryNum]?.pageImage) return;
+                    const img = await dbGet(`projects/${projectId}/protected/${secretHash}/answerImages/${entryNum}`);
+                    if (img) {
+                        answersDataCache[entryNum].pageImage = img;
+                        // 該当セルのURLを更新
+                        for (const key of Object.keys(answersData[entryNum]?.cells || {})) {
+                            const cell = answersData[entryNum].cells[key];
+                            if (cell?.type === 'crop' && cell.url === null) cell.url = img;
+                        }
+                    }
+                })).then(() => render());
+            }
             {
 
             currentConflicts = conflicts;

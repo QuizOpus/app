@@ -113,7 +113,10 @@
             overlay.style.display = 'block';
             const ansData = await dbGet(`projects/${projectId}/protected/${secretHash}/answers/${num}`);
             const pc = document.getElementById('admin-preview-content');
-            const imageUrl = ansData?.pageImage;
+            let imageUrl = ansData?.pageImage;
+            if (!imageUrl) {
+                imageUrl = await dbGet(`projects/${projectId}/protected/${secretHash}/answerImages/${num}`);
+            }
             if (imageUrl) {
                 pc.innerHTML = `<img src="${imageUrl}" alt="${name}" class="preview-image">`;
             } else {

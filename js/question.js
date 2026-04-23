@@ -23,61 +23,43 @@ let requiredScorers = 3;
         async function init() {
             await waitForAuth();
             // 模範解答・クロップ済み画像・エントリーキー一覧・採点者数を並列取得
-            const [answerText, cellImages, answersSnap, rs] = await Promise.all([
+            const [answerText, cellImages, rs] = await Promise.all([
                 dbGet(`projects/${projectId}/protected/${secretHash}/answers_text/${currentQ}`),
                 dbGet(`projects/${projectId}/protected/${secretHash}/answerCells/q${currentQ}`),
-                dbRef(`projects/${projectId}/protected/${secretHash}/answers`).orderByKey().get(),
                 dbGet(`projects/${projectId}/protected/${secretHash}/requiredScorers`)
             ]);
             if (rs) requiredScorers = rs;
             document.getElementById('answer-badge').textContent = answerText || '未設定';
 
+            // エントリー番号一覧（キーのみ取得、値は不要）
+            const answersSnap = await dbRef(`projects/${projectId}/protected/${secretHash}/answers`).once('value');
             if (answersSnap.exists()) {
-                const allData = answersSnap.val();
-                entryNumbers = Object.keys(allData).map(Number).filter(n => n > 0).sort((a, b) => a - b);
+                answersSnap.forEach(child => {
+                    const num = Number(child.key);
+                    if (num > 0) entryNumbers.push(num);
+                });
+                entryNumbers.sort((a, b) => a - b);
 
-                const needsImageLoad = [];
                 entryNumbers.forEach(entryNum => {
-                    answerDataCache[entryNum] = allData[entryNum];
                     if (!answers[entryNum]) answers[entryNum] = { cells: {} };
-
-                    // 優先順位: 1) answerCells(最速) → 2) 旧pageImage+crop → 3) answerImages+crop → 4) null
                     if (cellImages && cellImages[entryNum]) {
-                        answers[entryNum].cells[`q${currentQ}`] = cellImages[entryNum]; // Base64直接
+                        answers[entryNum].cells[`q${currentQ}`] = cellImages[entryNum];
                     } else {
-                        const cellData = allData[entryNum];
-                        const region = cellData?.cellRegions?.[`q${currentQ}`];
-                        if (region && cellData?.pageImage && cellData?.pageWidth) {
-                            // 旧形式: pageImageがanswers内にある
-                            answers[entryNum].cells[`q${currentQ}`] = {
-                                type: 'crop', url: cellData.pageImage,
-                                x: region.x, y: region.y, w: region.w, h: region.h,
-                                pageW: cellData.pageWidth
-                            };
-                        } else if (region && cellData?.pageWidth) {
-                            // pageImageがanswerImagesに分離されている→後からロード
-                            answers[entryNum].cells[`q${currentQ}`] = {
-                                type: 'crop', url: null,
-                                x: region.x, y: region.y, w: region.w, h: region.h,
-                                pageW: cellData.pageWidth
-                            };
-                            needsImageLoad.push(entryNum);
-                        } else {
-                            answers[entryNum].cells[`q${currentQ}`] = cellData?.cells?.[`q${currentQ}`] || null;
-                        }
+                        answers[entryNum].cells[`q${currentQ}`] = null;
                     }
                 });
 
-                // answerImagesからの遅延ロード（answerCellsが無い旧データ用）
-                if (needsImageLoad.length > 0) {
+                // cellImagesに無いエントリーは個別にフォールバック取得
+                const missing = entryNumbers.filter(n => !answers[n]?.cells[`q${currentQ}`]);
+                if (missing.length > 0) {
                     const BATCH = 20;
-                    for (let i = 0; i < needsImageLoad.length; i += BATCH) {
-                        const batch = needsImageLoad.slice(i, i + BATCH);
+                    for (let i = 0; i < missing.length; i += BATCH) {
+                        const batch = missing.slice(i, i + BATCH);
                         await Promise.all(batch.map(async entryNum => {
-                            const cell = answers[entryNum]?.cells[`q${currentQ}`];
-                            if (cell?.type === 'crop' && cell.url === null) {
-                                const img = await dbGet(`projects/${projectId}/protected/${secretHash}/answerImages/${entryNum}`);
-                                if (img) cell.url = img;
+                            const ansData = await dbGet(`projects/${projectId}/protected/${secretHash}/answers/${entryNum}`);
+                            if (ansData) {
+                                answerDataCache[entryNum] = ansData;
+                                answers[entryNum].cells[`q${currentQ}`] = ansData?.cells?.[`q${currentQ}`] || null;
                             }
                         }));
                         renderGrid();

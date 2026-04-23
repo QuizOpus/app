@@ -17,25 +17,27 @@ const { projectId, secretHash } = auth;
 
         async function init() {
             await waitForAuth();
-            // config, メタデータ, クロップ済み画像, 模範解答を並列取得
-            const [config, allAnswersData, allCellImages, answersTextData, rs] = await Promise.all([
+            // 軽量データのみ先に取得（config, スコア, 模範解答, 必要採点者数）
+            const [config, answersTextData, rs] = await Promise.all([
                 dbGet(`projects/${projectId}/protected/${secretHash}/config`),
-                dbGet(`projects/${projectId}/protected/${secretHash}/answers`).catch(e => { console.error('答案取得エラー:', e); return null; }),
-                dbGet(`projects/${projectId}/protected/${secretHash}/answerCells`).catch(() => null),
                 dbGet(`projects/${projectId}/protected/${secretHash}/answers_text`),
                 dbGet(`projects/${projectId}/protected/${secretHash}/requiredScorers`)
             ]);
             if (rs) requiredScorers = rs;
-
             if (config) totalQuestions = config.questionCount || 100;
-            if (allAnswersData) {
-                answersDataCache = allAnswersData;
-                entryNumbers = Object.keys(allAnswersData).map(Number).filter(n => n > 0).sort((a, b) => a - b);
-            }
-            if (allCellImages) window._cellImagesCache = allCellImages;
             if (answersTextData) answersText = answersTextData;
 
-            // スコアリスナー即開始
+            // エントリー番号一覧を取得（answersのキーだけ、値は不要）
+            const answersSnap = await dbRef(`projects/${projectId}/protected/${secretHash}/answers`).once('value');
+            if (answersSnap.exists()) {
+                answersSnap.forEach(child => {
+                    const num = Number(child.key);
+                    if (num > 0) entryNumbers.push(num);
+                });
+                entryNumbers.sort((a, b) => a - b);
+            }
+
+            // スコアリスナー即開始（画像は render 後に遅延取得）
             const scorePoller = new Poller(
                 `projects/${projectId}/protected/${secretHash}/scores`,
                 (data) => {
@@ -68,49 +70,28 @@ const { projectId, secretHash } = auth;
                 });
             }
 
-            // キャッシュから画像データを構築
-            const cellCache = window._cellImagesCache || {};
-            const needsImageLoad = [];
+            // コンフリクトがある問題の画像だけ遅延取得
+            const needsLoad = [];
             conflicts.forEach(c => {
                 if (!answersData[c.entryNum]) answersData[c.entryNum] = { cells: {} };
                 if (answersData[c.entryNum].cells[`q${c.q}`] === undefined) {
-                    // 優先: 1) answerCells(最速) → 2) 旧pageImage+crop → 3) answerImages+crop → 4) null
-                    const cellImg = cellCache[`q${c.q}`]?.[c.entryNum];
+                    answersData[c.entryNum].cells[`q${c.q}`] = null; // placeholder
+                    needsLoad.push(c);
+                }
+            });
+
+            if (needsLoad.length > 0) {
+                // answerCells から個別取得
+                Promise.all(needsLoad.map(async c => {
+                    const cellImg = await dbGet(`projects/${projectId}/protected/${secretHash}/answerCells/q${c.q}/${c.entryNum}`);
                     if (cellImg) {
                         answersData[c.entryNum].cells[`q${c.q}`] = cellImg;
                     } else {
-                        const ansData = answersDataCache[c.entryNum];
-                        const region = ansData?.cellRegions?.[`q${c.q}`];
-                        if (region && ansData?.pageImage && ansData?.pageWidth) {
-                            answersData[c.entryNum].cells[`q${c.q}`] = {
-                                type: 'crop', url: ansData.pageImage,
-                                x: region.x, y: region.y, w: region.w, h: region.h,
-                                pageW: ansData.pageWidth
-                            };
-                        } else if (region && ansData?.pageWidth) {
-                            answersData[c.entryNum].cells[`q${c.q}`] = {
-                                type: 'crop', url: null,
-                                x: region.x, y: region.y, w: region.w, h: region.h,
-                                pageW: ansData.pageWidth
-                            };
-                            needsImageLoad.push(c.entryNum);
-                        } else {
+                        // フォールバック: answersから取得
+                        const ansData = answersDataCache[c.entryNum] || await dbGet(`projects/${projectId}/protected/${secretHash}/answers/${c.entryNum}`);
+                        if (ansData) {
+                            answersDataCache[c.entryNum] = ansData;
                             answersData[c.entryNum].cells[`q${c.q}`] = ansData?.cells?.[`q${c.q}`] || null;
-                        }
-                    }
-                }
-            });
-            // answerImagesからの遅延ロード
-            if (needsImageLoad.length > 0) {
-                const unique = [...new Set(needsImageLoad)];
-                Promise.all(unique.map(async entryNum => {
-                    if (answersDataCache[entryNum]?.pageImage) return;
-                    const img = await dbGet(`projects/${projectId}/protected/${secretHash}/answerImages/${entryNum}`);
-                    if (img) {
-                        answersDataCache[entryNum].pageImage = img;
-                        for (const key of Object.keys(answersData[entryNum]?.cells || {})) {
-                            const cell = answersData[entryNum].cells[key];
-                            if (cell?.type === 'crop' && cell.url === null) cell.url = img;
                         }
                     }
                 })).then(() => render());

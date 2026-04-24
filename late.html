@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="favicon.png">
     <meta name="description" content="CIQ - クイズ大会の解答採点を支援するウェブプラットフォーム">
-    <title>CIQ - 遅刻届</title>
+    <title>CIQ - 遅刻フォーム</title>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -22,7 +22,7 @@
         <div class="page-logo">
             <span class="logo-icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
             <h1 id="late-title"><i class="fa-solid fa-spinner fa-spin"></i> 読み込み中...</h1>
-            <div class="logo-sub" id="late-subtitle">遅刻届</div>
+            <div class="logo-sub" id="late-subtitle">遅刻フォーム</div>
         </div>
 
         <div class="page-card" id="form-card">
@@ -36,11 +36,7 @@
                 <input type="text" class="page-input" id="f-password" required placeholder="------">
             </div>
 
-            <div class="info-box">
-                <i class="fa-solid fa-circle-info"></i> 遅刻届を提出すると、受付状況が「遅刻」に変わります。当日のQRコード受付は引き続き可能です。
-            </div>
-
-            <button class="page-btn" id="submit-btn" onclick="processLate()"><i class="fa-solid fa-clock-rotate-left"></i> 遅刻届を提出する</button>
+            <button class="page-btn" id="submit-btn" onclick="processLate()"><i class="fa-solid fa-clock-rotate-left"></i> 遅刻を届け出る</button>
             <div class="page-msg" id="status-msg"></div>
         </div>
 

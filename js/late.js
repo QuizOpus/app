@@ -1,4 +1,4 @@
-// late.js — 遅刻届処理（メールアドレス + パスワード認証）
+// late.js — 遅刻フォーム処理（メールアドレス + パスワード認証）
 
 const params = new URLSearchParams(location.search);
     let projectId = params.get('pid');
@@ -15,7 +15,7 @@ const params = new URLSearchParams(location.search);
             let pName = await dbGet(`projects/${projectId}/publicSettings/projectName`);
             if (!pName) pName = await dbGet(`projects/${projectId}/settings/projectName`);
             document.getElementById('late-title').textContent = pName || projectId;
-            document.title = (pName || projectId) + ' - 遅刻届';
+            document.title = (pName || projectId) + ' - 遅刻フォーム';
         } catch(e) {
             document.getElementById('late-title').textContent = projectId;
         }
@@ -48,7 +48,7 @@ const params = new URLSearchParams(location.search);
 
             if (!entriesData || Object.keys(entriesData).length === 0) {
                 showStatus('指定されたメールアドレスに一致するエントリーが見つかりません。', 'error');
-                btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> 遅刻届を提出する';
+                btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> 遅刻を届け出る';
                 return;
             }
 
@@ -67,13 +67,13 @@ const params = new URLSearchParams(location.search);
 
             if (!matched) {
                 showStatus('パスワードが正しくありません。', 'error');
-                btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> 遅刻届を提出する';
+                btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> 遅刻を届け出る';
                 return;
             }
 
             if (targetData.status === 'late') {
-                showStatus('既に遅刻届が提出済みです。', 'error');
-                btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> 遅刻届を提出する';
+                showStatus('既に遅刻が届け出済みです。', 'error');
+                btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> 遅刻を届け出る';
                 return;
             }
 
@@ -85,7 +85,7 @@ const params = new URLSearchParams(location.search);
 
         } catch (err) {
             showStatus('システムエラーが発生しました。', 'error');
-            btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> 遅刻届を提出する';
+            btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> 遅刻を届け出る';
         }
     }
 

@@ -111,8 +111,8 @@ const params = new URLSearchParams(location.search);
             const tr = document.createElement('tr');
             if (isWaitlist) tr.style.opacity = '0.6';
             tr.innerHTML = `
-                <td class="c-time">${waitIcon}${e._priority} <span style="color:#555;font-size:11px;margin-left:4px">#${padNum(e.entryNumber)}</span></td>
-                <td>${timeStr}</td>
+                <td style="font-weight:700">${e._priority}</td>
+                <td class="c-time">${waitIcon}${timeStr} <span style="color:#555;font-size:11px;margin-left:4px">#${padNum(e.entryNumber)}</span></td>
                 <td>${escapeHtml(e.affiliation || '')}</td>
                 <td>${escapeHtml(grade)}</td>
                 <td>${escapeHtml(e.entryName || '')}</td>

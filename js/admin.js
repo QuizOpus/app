@@ -94,6 +94,8 @@
             document.getElementById('registration-link').textContent = `${lOrigins}entry.html?pid=${projectId}`;
             document.getElementById('cancel-link').href = `${lOrigins}cancel.html?pid=${projectId}`;
             document.getElementById('cancel-link').textContent = `${lOrigins}cancel.html?pid=${projectId}`;
+            document.getElementById('late-link').href = `${lOrigins}late.html?pid=${projectId}`;
+            document.getElementById('late-link').textContent = `${lOrigins}late.html?pid=${projectId}`;
             document.getElementById('disclosure-link').href = `${lOrigins}disclosure.html?pid=${projectId}`;
             document.getElementById('disclosure-link').textContent = `${lOrigins}disclosure.html?pid=${projectId}`;
 

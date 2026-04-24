@@ -41,11 +41,12 @@
     const msg = i <= 10 ? '全問正解目指します！' : '';
 
     // PII暗号化
+    const isChubu = Math.random() < 0.4; // 40%が中部地方
     const piiData = {
       email, familyName: ln, firstName: fn,
       familyNameKana: lk, firstNameKana: fk,
       affiliation: school, grade, entryName: eName,
-      useEntryName: false, message: msg, inquiry: ''
+      useEntryName: false, isChubu, message: msg, inquiry: ''
     };
     const encryptedPII = await AppCrypto.encryptRSA(JSON.stringify(piiData), publicKeyJwk);
     const emailHash = await AppCrypto.hashPassword(email);
@@ -55,6 +56,7 @@
       uuid, entryNumber: i, encryptedPII, emailHash,
       disclosurePw: pwHash,
       entryName: eName, affiliation: school, grade, message: msg,
+      isChubu,
       status: 'registered', checkedIn: false,
       timestamp: Date.now() - (ENTRY_COUNT - i) * 60000
     };
@@ -83,7 +85,13 @@
 
     for (let i = 1; i <= ENTRY_COUNT; i++) {
       if (!scoreUpdates[i]) scoreUpdates[i] = {};
-      const correctRate = Math.max(0.1, 1 - (q / QUESTION_COUNT) * 0.8 - Math.random() * 0.2);
+      // Q91-Q100: 正答者0-5人（少数正解問題）
+      let correctRate;
+      if (q >= 91) {
+        correctRate = 3 / ENTRY_COUNT; // 約3人くらい
+      } else {
+        correctRate = Math.max(0.1, 1 - (q / QUESTION_COUNT) * 0.8 - Math.random() * 0.2);
+      }
       const result = Math.random() < correctRate ? 'correct' : 'wrong';
       scoreUpdates[i][`q${q}`] = {};
       scorers.forEach(s => { scoreUpdates[i][`q${q}`][s] = result; });

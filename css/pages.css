@@ -388,6 +388,7 @@ body.page-conflict { padding: 0; }
    cancel.html — Entry Cancellation
    ────────────────────────────────────────── */
 .warning-box { margin-bottom: 20px; font-size: 13px; color: var(--warning); background: rgba(245,158,11,0.08); padding: 14px 16px; border-radius: var(--radius-md); border: 1px solid rgba(245,158,11,0.2); line-height: 1.7; }
+.info-box { margin-bottom: 20px; font-size: 13px; color: #60a5fa; background: rgba(96,165,250,0.08); padding: 14px 16px; border-radius: var(--radius-md); border: 1px solid rgba(96,165,250,0.2); line-height: 1.7; }
 
 /* ──────────────────────────────────────────
    terms.html — Participation Terms

@@ -88,11 +88,12 @@
             if (fixedLen > 0) {
                 const totalChars = familyName.length + firstName.length;
                 if (totalChars < fixedLen) {
-                    // 姓名間にスペースを入れて固定長に
+                    // 固定長未満 → 姓名間に全角スペースで埋める
                     const padCount = fixedLen - totalChars;
                     return familyName + '\u3000'.repeat(padCount) + firstName;
                 }
-                // 固定長以上 → 通常の区切りで出力
+                // 固定長以上 → スペースなしでそのまま結合
+                return familyName + firstName;
             }
             return familyName + sep + firstName;
         }

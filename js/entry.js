@@ -114,8 +114,9 @@ const params = new URLSearchParams(location.search);
                 const publicKeyJwk = await dbGet(`projects/${projectId}/publicSettings/publicKey`);
                 if (!publicKeyJwk) throw new Error("セキュリティキーが取得できません");
                 const useEntryName = false; // CIQ大会は本名表示固定
+                const isChubu = document.getElementById('f-chubu').checked;
                 
-                const piiData = { email, familyName, firstName, familyNameKana, firstNameKana, affiliation, grade, entryName, useEntryName, message, inquiry };
+                const piiData = { email, familyName, firstName, familyNameKana, firstNameKana, affiliation, grade, entryName, useEntryName, isChubu, message, inquiry };
                 const encryptedPII = await AppCrypto.encryptRSA(JSON.stringify(piiData), publicKeyJwk);
 
 
@@ -130,6 +131,7 @@ const params = new URLSearchParams(location.search);
                     affiliation,
                     grade,
                     message,
+                    isChubu,
                     status: entryStatus,
                     checkedIn: false,
                     timestamp: SERVER_TIMESTAMP

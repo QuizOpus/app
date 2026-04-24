@@ -73,14 +73,24 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0);
 
+                    // 座標スケール: cellRegionsはフル解像度基準、画像は縮小済み
+                    const originalWidth = ansData.pageWidth || img.width;
+                    const scale = img.width / originalWidth;
+                    if (idx === 0) console.log(`[GradedPDF] img: ${img.width}x${img.height}, pageWidth: ${originalWidth}, scale: ${scale.toFixed(4)}`);
+
                     // ○/× マーク描画（半透明）
                     const result = entryResults[en];
                     for (let q = 1; q <= totalQuestions; q++) {
                         const region = cellRegions[`q${q}`];
                         if (!region) continue;
-                        const cx = region.x + region.w / 2;
-                        const cy = region.y + region.h / 2;
-                        const radius = Math.min(region.w, region.h) * 0.3;
+                        // スケール適用
+                        const rx = region.x * scale;
+                        const ry = region.y * scale;
+                        const rw = region.w * scale;
+                        const rh = region.h * scale;
+                        const cx = rx + rw / 2;
+                        const cy = ry + rh / 2;
+                        const radius = Math.min(rw, rh) * 0.3;
                         const isCorrect = result.answers[q - 1] === 1;
 
                         ctx.save();
@@ -115,11 +125,9 @@
                     ctx.fillStyle = '#ef4444';
                     ctx.globalAlpha = 0.9;
 
-                    // マークシートの上あたり — configのanswerRegionsの最下端の少し下
-                    // answerRegionsが totalQuestions 個あるので、最後のセルのy+hの少し下を使う
                     const lastRegion = cellRegions[`q${totalQuestions}`];
                     const scoreY = lastRegion
-                        ? lastRegion.y + lastRegion.h + fontSize * 1.5
+                        ? (lastRegion.y + lastRegion.h) * scale + fontSize * 1.5
                         : canvas.height * 0.88;
 
                     const scoreText = `Score: ${result.score}  |  Streak 1: ${result.topStreaks[0] || 0}  |  Streak 2: ${result.topStreaks[1] || 0}`;

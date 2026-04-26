@@ -14,7 +14,6 @@ const params = new URLSearchParams(location.search);
         // プロジェクト名を取得して表示
         try {
             let pName = await dbGet(`projects/${projectId}/publicSettings/projectName`);
-            if (!pName) pName = await dbGet(`projects/${projectId}/settings/projectName`);
             document.getElementById('logo-title').textContent = pName || projectId;
             document.title = (pName || projectId) + ' - 成績照会';
         } catch(e) {

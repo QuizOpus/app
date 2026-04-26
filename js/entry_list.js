@@ -19,7 +19,7 @@ const params = new URLSearchParams(location.search);
         // プロジェクト名を取得して表示
         try {
             let pName = await dbGet(`projects/${projectId}/publicSettings/projectName`);
-            if (!pName) pName = await dbGet(`projects/${projectId}/settings/projectName`);
+            if (!pName) pName = projectId;
             document.getElementById('page-title').textContent = pName || projectId;
             document.title = (pName || projectId) + ' - エントリーリスト';
         } catch(e) {

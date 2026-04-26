@@ -25,9 +25,8 @@
                     const score = answers.reduce((a, b) => a + b, 0);
                     const streaks = []; let cur = 0;
                     answers.forEach(a => { if (a === 1) { cur++; } else { streaks.push(cur); cur = 0; } });
-                    streaks.push(cur);
-                    // 上位2連答（降順ソート）
-                    const topStreaks = [...streaks].sort((a, b) => b - a).slice(0, 2);
+                    // 上位2連答（出現順）
+                    const topStreaks = streaks.slice(0, 2);
                     entryResults[en] = { score, topStreaks, answers };
                 }
 

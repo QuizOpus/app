@@ -224,6 +224,7 @@ label i { color: var(--primary); margin-right: 3px; }
 /* Tables */
 .table-container {
   overflow-x: auto;
+  overflow-y: auto;
   border-radius: var(--radius-md);
   border: 1px solid var(--glass-border);
   background: rgba(15, 23, 42, 0.35);

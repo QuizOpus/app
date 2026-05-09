@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; connect-src 'self' wss://*.firebasedatabase.app https://*.firebasedatabase.app https://*.googleapis.com https://www.gstatic.com; frame-src 'self' https://*.firebasedatabase.app https://*.firebaseapp.com; img-src 'self' data: blob:;">
-    <meta name="description" content="CIQ - よくある質問と回答">
-    <title>CIQ - ヘルプ & Q&A</title>
+    <meta name="description" content="CIQ - 運営マニュアル">
+    <title>CIQ - 運営ヘルプ</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,92 +18,57 @@
     <div class="help-container">
         <a href="index.html" class="help-back"><i class="fa-solid fa-arrow-left"></i> トップページに戻る</a>
         <div class="help-header">
-            <h1><i class="fa-solid fa-circle-question"></i> ヘルプ & Q&A</h1>
-            <p>CIQの使い方やよくある質問をまとめています</p>
+            <h1><i class="fa-solid fa-circle-question"></i> 運営ヘルプ</h1>
+            <p>CIQのシステム管理者および大会運営者向けのマニュアルです</p>
         </div>
 
         <div class="qa-category">
-            <div class="qa-category-title"><i class="fa-solid fa-right-to-bracket"></i> ログイン・アカウント</div>
+            <div class="qa-category-title"><i class="fa-solid fa-right-to-bracket"></i> プロジェクト（大会）管理</div>
 
             <div class="qa-item">
                 <div class="qa-question" onclick="this.parentElement.classList.toggle('open')">
-                    プロジェクトIDとパスワードはどこで手に入りますか？
+                    新しいプロジェクトを作成するには？
                     <i class="fa-solid fa-chevron-down"></i>
                 </div>
                 <div class="qa-answer"><div class="qa-answer-inner">
-                    プロジェクトを作成した管理者から共有されます。管理者は作成完了画面で「プロジェクトID」「管理者用マスターパスワード」「採点者用アクセスコード」の3つを受け取ります。採点者には「プロジェクトID」と「採点者用アクセスコード」を共有してください。
+                    管理者専用のログインURLからアクセスすると、プロジェクト（大会）作成パネルが表示されます。そこで任意の大会名、パスワード、管理者キーなどを設定して作成を行ってください。
                 </div></div>
             </div>
 
             <div class="qa-item">
                 <div class="qa-question" onclick="this.parentElement.classList.toggle('open')">
-                    採点者と管理者の違いは？
+                    参加者へのエントリーや成績照会の案内方法は？
                     <i class="fa-solid fa-chevron-down"></i>
                 </div>
                 <div class="qa-answer"><div class="qa-answer-inner">
-                    <strong>採点者</strong>：問題ごとに正誤を入力します。複数人で同じ問題を採点することで、採点ミスを防ぎます。<br>
-                    <strong>管理者</strong>：プロジェクトの設定、答案のアップロード、模範解答の登録、採点結果の確認・CSVエクスポートなど、すべての操作が可能です。
+                    管理画面の「設定」タブ内にある「共有リンク」セクションから、各機能（エントリー、リスト、編集、キャンセル、遅刻、成績照会）の専用URLをコピーできます。これを参加者に共有してください。
                 </div></div>
             </div>
-
+            
             <div class="qa-item">
                 <div class="qa-question" onclick="this.parentElement.classList.toggle('open')">
-                    同じ名前でログインしたらどうなりますか？
+                    採点スタッフを招待するには？
                     <i class="fa-solid fa-chevron-down"></i>
                 </div>
                 <div class="qa-answer"><div class="qa-answer-inner">
-                    既に同じ名前の採点者がいる場合、確認ダイアログが表示されます。同一人物であればそのまま続行できます。別人の場合は名前を変更してログインしてください（例: 田中A、田中B）。
-                </div></div>
-            </div>
-        </div>
-
-        <div class="qa-category">
-            <div class="qa-category-title"><i class="fa-solid fa-pen-to-square"></i> 採点</div>
-
-            <div class="qa-item">
-                <div class="qa-question" onclick="this.parentElement.classList.toggle('open')">
-                    採点はどのように行いますか？
-                    <i class="fa-solid fa-chevron-down"></i>
-                </div>
-                <div class="qa-answer"><div class="qa-answer-inner">
-                    ログイン後、問題一覧が表示されます。問題を選択すると、各参加者の回答画像が表示されるので、模範解答と見比べて「○（正解）」「×（不正解）」を選びます。全員分の採点が終わったら「完了」ボタンを押します。
-                </div></div>
-            </div>
-
-            <div class="qa-item">
-                <div class="qa-question" onclick="this.parentElement.classList.toggle('open')">
-                    採点者が複数いる場合の結果はどうなりますか？
-                    <i class="fa-solid fa-chevron-down"></i>
-                </div>
-                <div class="qa-answer"><div class="qa-answer-inner">
-                    全ての採点者が同じ結果を出した場合、その結果が自動的に採用されます。採点者の間で意見が分かれた場合は「コンフリクト」として管理者に通知され、管理者が最終判断を行います。
-                </div></div>
-            </div>
-
-            <div class="qa-item">
-                <div class="qa-question" onclick="this.parentElement.classList.toggle('open')">
-                    採点途中でブラウザを閉じてしまいました
-                    <i class="fa-solid fa-chevron-down"></i>
-                </div>
-                <div class="qa-answer"><div class="qa-answer-inner">
-                    採点はリアルタイムでサーバーに保存されています。同じ名前で再度ログインすれば、途中から再開できます。
+                    採点スタッフには、プロジェクト作成時に設定した「プロジェクトID」と「採点者用アクセスコード」を共有してください。通常のログイン画面からアクセスすることで、採点専用画面に入ることができます。
                 </div></div>
             </div>
         </div>
 
         <div class="qa-category">
-            <div class="qa-category-title"><i class="fa-solid fa-gear"></i> 管理者向け</div>
+            <div class="qa-category-title"><i class="fa-solid fa-file-pdf"></i> 答案データの管理</div>
 
             <div class="qa-item">
                 <div class="qa-question" onclick="this.parentElement.classList.toggle('open')">
-                    回答用紙のPDFはどう準備しますか？
+                    回答用紙のPDFはどう準備・アップロードしますか？
                     <i class="fa-solid fa-chevron-down"></i>
                 </div>
                 <div class="qa-answer"><div class="qa-answer-inner">
-                    スキャナーで参加者の回答用紙をPDF化してください。1ページ1枚で、QRコードが読み取れる解像度（300dpi以上推奨）で保存してください。管理画面の「答案管理」タブからPDFをアップロードすると、自動でQRコードを読み取り、各参加者の回答として保存されます。
+                    スキャナー等で参加者の回答用紙をPDF化（1ページ1枚、QRコードが読み取れる解像度）し、管理画面の「答案管理」タブからアップロードしてください。アップロードすると自動で分割・QRコード読み取りが行われ、各参加者の答案として登録されます。
                 </div></div>
             </div>
-
+            
             <div class="qa-item">
                 <div class="qa-question" onclick="this.parentElement.classList.toggle('open')">
                     模範解答のCSVフォーマットは？
@@ -115,58 +80,28 @@
                     ② <strong>番号なし</strong>: 1行目が第1問の解答、2行目が第2問の解答…という形式
                 </div></div>
             </div>
-
-            <div class="qa-item">
-                <div class="qa-question" onclick="this.parentElement.classList.toggle('open')">
-                    プロジェクトをリセットするとどうなりますか？
-                    <i class="fa-solid fa-chevron-down"></i>
-                </div>
-                <div class="qa-answer"><div class="qa-answer-inner">
-                    エントリー、答案画像、採点データがすべて消去され、復元できません。プロジェクトの設定（パスワード・暗号鍵など）はそのまま維持されるため、同じIDで再利用できます。リセット前に必要なデータはCSVエクスポートしておいてください。
-                </div></div>
-            </div>
         </div>
 
         <div class="qa-category">
-            <div class="qa-category-title"><i class="fa-solid fa-clipboard-list"></i> エントリー・参加</div>
+            <div class="qa-category-title"><i class="fa-solid fa-chart-pie"></i> 採点・集計管理</div>
 
             <div class="qa-item">
                 <div class="qa-question" onclick="this.parentElement.classList.toggle('open')">
-                    エントリーをキャンセルしたい場合は？
+                    採点コンフリクト（競合）とは何ですか？
                     <i class="fa-solid fa-chevron-down"></i>
                 </div>
                 <div class="qa-answer"><div class="qa-answer-inner">
-                    キャンセルフォームから、エントリー時に使用したメールアドレスとパスワードを入力してキャンセルできます。キャンセルフォームのURLは管理者に確認してください。
+                    複数人の採点スタッフが同じ問題で異なる判定（○と×）を出した場合に発生します。管理画面の「採点」タブからコンフリクト一覧を確認し、管理者が最終的な正誤判断を行ってください。
                 </div></div>
             </div>
 
             <div class="qa-item">
                 <div class="qa-question" onclick="this.parentElement.classList.toggle('open')">
-                    エントリー後にメールが届きません
+                    採点結果のエクスポート機能について
                     <i class="fa-solid fa-chevron-down"></i>
                 </div>
                 <div class="qa-answer"><div class="qa-answer-inner">
-                    迷惑メールフォルダをご確認ください。それでも届かない場合は、メールアドレスの入力ミスの可能性があります。運営にお問い合わせください。
-                </div></div>
-            </div>
-
-            <div class="qa-item">
-                <div class="qa-question" onclick="this.parentElement.classList.toggle('open')">
-                    当日受付のQRコードはどこで確認できますか？
-                    <i class="fa-solid fa-chevron-down"></i>
-                </div>
-                <div class="qa-answer"><div class="qa-answer-inner">
-                    エントリー完了時に送信されるメールにQRコード画像が含まれています。当日はそのQRコードを受付でご提示ください。
-                </div></div>
-            </div>
-
-            <div class="qa-item">
-                <div class="qa-question" onclick="this.parentElement.classList.toggle('open')">
-                    成績照会とは何ですか？
-                    <i class="fa-solid fa-chevron-down"></i>
-                </div>
-                <div class="qa-answer"><div class="qa-answer-inner">
-                    採点完了後、参加者がメールアドレスとパスワードを入力して採点結果を確認できる機能です。各問題の正誤と合計点が表示されます。成績照会のURLは管理者から共有されます。
+                    「集計」タブから、全参加者の点数データ（採点結果CSV）および問題ごとの正答率データ（正答率分析CSV）を出力可能です。また、採点済み（○×等のスタンプ付き）の回答用紙PDFを出力することもできます。
                 </div></div>
             </div>
         </div>
@@ -176,27 +111,27 @@
 
             <div class="qa-item">
                 <div class="qa-question" onclick="this.parentElement.classList.toggle('open')">
-                    「データベース通信拒否」と表示されます
+                    プロジェクトのデータをリセットしたい
                     <i class="fa-solid fa-chevron-down"></i>
                 </div>
                 <div class="qa-answer"><div class="qa-answer-inner">
-                    Firebaseへの認証が切れた可能性があります。ページを再読み込みするか、ログアウトして再度ログインしてください。それでも解決しない場合は運営者にお問い合わせください。
+                    「設定」タブの下部からプロジェクトの初期化が可能です。参加者データや答案、採点データが完全に消去されます（復元不可）。プロジェクトの基本設定は維持されるため、同じIDで次回の大会運営が可能です。
                 </div></div>
             </div>
 
             <div class="qa-item">
                 <div class="qa-question" onclick="this.parentElement.classList.toggle('open')">
-                    スマートフォンでダブルタップするとズームされます
+                    「データベース通信拒否」と表示されます
                     <i class="fa-solid fa-chevron-down"></i>
                 </div>
                 <div class="qa-answer"><div class="qa-answer-inner">
-                    最新版ではダブルタップズーム防止が組み込まれています。ブラウザのキャッシュをクリアして再読み込みしてください。
+                    認証セッションが切れたか、無効なプロジェクトIDにアクセスしようとしている可能性があります。一度ログアウトし、ログイン画面から再度プロジェクトに入り直してください。
                 </div></div>
             </div>
         </div>
 
         <div style="text-align:center; margin-top:40px; padding:20px;">
-            <p style="color:var(--text-muted); font-size:13px;">解決しない問題がある場合は、大会運営にお問い合わせください。</p>
+            <p style="color:var(--text-muted); font-size:13px;">CIQ Admin Manual</p>
         </div>
     </div>
     <script defer src="js/config.js"></script>

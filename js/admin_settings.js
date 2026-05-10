@@ -34,6 +34,13 @@
             showAdminToast('参加規約を更新しました', 'success');
         }
 
+        window.updateEmailSettings = async function() {
+            const senderName = document.getElementById('setting-sender-name').value.trim();
+            const replyTo = document.getElementById('setting-reply-to').value.trim();
+            await dbUpdate(`projects/${projectId}/publicSettings`, { senderName, replyTo });
+            showAdminToast('メール設定を更新しました', 'success');
+        };
+
         function toggleMaxEntries() {
             const isOn = document.getElementById('max-entries-toggle').checked;
             const badge = document.getElementById('max-entries-status');

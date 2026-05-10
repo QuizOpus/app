@@ -44,21 +44,21 @@ const CIQEmail = (() => {
     }
 
     // エントリー完了メール
-    async function sendEntryConfirmation(to, { projectName, entryNumber, password, uuid, familyName, firstName, status, editUrl }) {
+    async function sendEntryConfirmation(to, { projectName, entryNumber, password, uuid, familyName, firstName, status, editUrl, senderName, replyTo }) {
         return _send('entry_confirmation', to, {
-            projectName, entryNumber, password, uuid, familyName, firstName, status, editUrl,
+            projectName, entryNumber, password, uuid, familyName, firstName, status, editUrl, senderName, replyTo
         });
     }
 
     // キャンセル完了メール
-    async function sendCancellation(to, { projectName, entryNumber, familyName, firstName }) {
+    async function sendCancellation(to, { projectName, entryNumber, familyName, firstName, senderName, replyTo }) {
         return _send('entry_cancelled', to, {
-            projectName, entryNumber, familyName, firstName,
+            projectName, entryNumber, familyName, firstName, senderName, replyTo
         });
     }
 
     // メール認証コード送信
-    async function sendVerificationCode(to, projectName) {
+    async function sendVerificationCode(to, projectName, senderName, replyTo) {
         if (!_endpoint) {
             console.warn('[CIQEmail] endpoint未設定 — 認証コード送信をスキップ');
             return null;
@@ -70,7 +70,7 @@ const CIQEmail = (() => {
                     'Content-Type': 'application/json',
                     'X-Api-Key': _apiKey,
                 },
-                body: JSON.stringify({ type: 'send_verification', to, data: { projectName } }),
+                body: JSON.stringify({ type: 'send_verification', to, data: { projectName, senderName, replyTo } }),
             });
             if (!res.ok) return null;
             return await res.json(); // { success, signature, expiresAt }

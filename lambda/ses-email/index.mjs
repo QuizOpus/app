@@ -196,9 +196,13 @@ export const handler = async (event) => {
       const signature = signCode(code, to, expiresAt);
 
       const projectName = data?.projectName || 'CIQ';
+      const senderName = data?.senderName || projectName;
+      const sourceStr = `${senderName} <${FROM}>`;
+      const replyTo = data?.replyTo || null;
 
       await ses.send(new SendEmailCommand({
-        Source: FROM,
+        Source: sourceStr,
+        ReplyToAddresses: replyTo ? [replyTo] : [],
         Destination: { ToAddresses: [to] },
         Message: {
           Subject: { Data: `【${projectName}】メール認証コード`, Charset: "UTF-8" },
@@ -263,8 +267,13 @@ export const handler = async (event) => {
       emailBody.Text = { Data: result.text, Charset: "UTF-8" };
     }
 
+    const senderName = data.senderName || data.projectName || "CIQ";
+    const sourceStr = `${senderName} <${FROM}>`;
+    const replyTo = data.replyTo || null;
+
     const command = new SendEmailCommand({
-      Source: FROM,
+      Source: sourceStr,
+      ReplyToAddresses: replyTo ? [replyTo] : [],
       Destination: { ToAddresses: [to] },
       Message: {
         Subject: { Data: result.subject, Charset: "UTF-8" },

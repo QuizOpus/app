@@ -10,12 +10,18 @@ const params = new URLSearchParams(location.search);
 
     // 大会名を取得して表示
     let projectName = '';
+    let globalSenderName = null;
+    let globalReplyTo = null;
+
     (async () => {
         if (!projectId) return;
         await waitForAuth();
         try {
-            let pName = await dbGet(`projects/${projectId}/publicSettings/projectName`);
-            projectName = pName || projectId;
+            let settings = await dbGet(`projects/${projectId}/publicSettings`);
+            projectName = settings?.projectName || projectId;
+            globalSenderName = settings?.senderName || null;
+            globalReplyTo = settings?.replyTo || null;
+            
             document.getElementById('cancel-title').textContent = projectName;
             document.title = projectName + ' - キャンセルフォーム';
         } catch(e) {
@@ -95,6 +101,8 @@ const params = new URLSearchParams(location.search);
                 entryNumber: String(entryNum).padStart(3, '0'),
                 familyName: '',
                 firstName: '',
+                senderName: globalSenderName,
+                replyTo: globalReplyTo
             }).catch(e => console.warn('キャンセルメール送信スキップ:', e));
 
             document.getElementById('form-card').innerHTML = `

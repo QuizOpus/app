@@ -162,9 +162,6 @@
             if (publicSettings.terms) {
                 document.getElementById('setting-terms').value = publicSettings.terms;
             }
-            if (publicSettings.senderName) {
-                document.getElementById('setting-sender-name').value = publicSettings.senderName;
-            }
             if (publicSettings.replyTo) {
                 document.getElementById('setting-reply-to').value = publicSettings.replyTo;
             }

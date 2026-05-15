@@ -10,7 +10,6 @@ const params = new URLSearchParams(location.search);
 
     // 大会名を取得して表示
     let projectName = '';
-    let globalSenderName = null;
     let globalReplyTo = null;
 
     (async () => {
@@ -19,7 +18,6 @@ const params = new URLSearchParams(location.search);
         try {
             let settings = await dbGet(`projects/${projectId}/publicSettings`);
             projectName = settings?.projectName || projectId;
-            globalSenderName = settings?.senderName || null;
             globalReplyTo = settings?.replyTo || null;
             
             document.getElementById('cancel-title').textContent = projectName;
@@ -101,7 +99,7 @@ const params = new URLSearchParams(location.search);
                 entryNumber: String(entryNum).padStart(3, '0'),
                 familyName: '',
                 firstName: '',
-                senderName: globalSenderName,
+                senderName: (projectName || projectId) + ' 実行委員会',
                 replyTo: globalReplyTo
             }).catch(e => console.warn('キャンセルメール送信スキップ:', e));
 

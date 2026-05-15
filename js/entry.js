@@ -3,7 +3,6 @@
 
 const params = new URLSearchParams(location.search);
         const projectId = params.get('pid');
-        let globalSenderName = null;
         let globalReplyTo = null;
 
         if (!projectId) {
@@ -63,7 +62,7 @@ const params = new URLSearchParams(location.search);
             showVerifyMsg('認証コードを再送信しています...', '');
 
             const pName = document.getElementById('project-title')?.textContent || projectId;
-            const result = await CIQEmail.sendVerificationCode(email, pName, globalSenderName, globalReplyTo);
+            const result = await CIQEmail.sendVerificationCode(email, pName, pName + ' 実行委員会', globalReplyTo);
 
             if (!result || !result.success) {
                 showVerifyMsg('再送信に失敗しました。', 'error');
@@ -92,7 +91,7 @@ const params = new URLSearchParams(location.search);
             showVerifyMsg('認証コードを送信しています...', '');
 
             const pName = document.getElementById('project-title')?.textContent || projectId;
-            const result = await CIQEmail.sendVerificationCode(email, pName, globalSenderName, globalReplyTo);
+            const result = await CIQEmail.sendVerificationCode(email, pName, pName + ' 実行委員会', globalReplyTo);
 
             if (!result || !result.success) {
                 showVerifyMsg('認証コードの送信に失敗しました。メールアドレスを確認してください。', 'error');
@@ -299,7 +298,7 @@ const params = new URLSearchParams(location.search);
                     firstName,
                     status: entryStatus,
                     editUrl,
-                    senderName: globalSenderName,
+                    senderName: pName + ' 実行委員会',
                     replyTo: globalReplyTo
                 }).catch(e => console.warn('メール送信スキップ:', e));
 
@@ -339,7 +338,6 @@ const params = new URLSearchParams(location.search);
                     document.getElementById('project-title').textContent = pName;
                     document.title = pName + ' - エントリーフォーム';
                     
-                    globalSenderName = settings.senderName || null;
                     globalReplyTo = settings.replyTo || null;
 
                     // 参加規約リンクにプロジェクトIDを付与

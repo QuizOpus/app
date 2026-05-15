@@ -35,9 +35,8 @@
         }
 
         window.updateEmailSettings = async function() {
-            const senderName = document.getElementById('setting-sender-name').value.trim();
             const replyTo = document.getElementById('setting-reply-to').value.trim();
-            await dbUpdate(`projects/${projectId}/publicSettings`, { senderName, replyTo });
+            await dbUpdate(`projects/${projectId}/publicSettings`, { replyTo });
             showAdminToast('メール設定を更新しました', 'success');
         };
 
